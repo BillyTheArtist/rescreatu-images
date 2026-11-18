@@ -1,0 +1,513 @@
+/* the profile page underneath is longer than the screen, but this overlay covers all of it,
+   so switch off the page's scrolling and scrollbar */
+html, body {
+  overflow: hidden !important;
+}
+
+#my-overlay {
+  /* how far the sign post and pet sit below the middle of the screen: 9% of the screen
+     height, but never so far that the post's base would go past the bottom edge */
+  --drop: max(0px, min(9vh, calc(50vh - 236px)));
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  padding-top: calc(2 * var(--drop));   /* pushes the centered pet down by --drop */
+        background: url(https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/background.png) no-repeat center center fixed;
+        -webkit-background-size: cover;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+        background-size: cover;
+  z-index: 999999999; /* Huge z-index to stay on top */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.my-content {
+  text-align: center;
+  font-family: Arial, sans-serif;
+  /* the sign post sits to the left of the pet, so the pet moves 155px right of center
+     to keep the whole group (post, pet and heading) centered on the screen */
+  margin-left: 310px;
+}
+
+/* ---------- sign post ---------- */
+/* trunk box is 440px, trunk center line at 221.8px */
+.sign-glow {
+  position: absolute;
+  top: calc(50% + var(--drop));   /* lowered by the same amount as the pet */
+  left: calc(50% - 405px);   /* sits left of the pet carousel */
+  margin-top: -220px;
+  width: 440px;
+  height: 440px;
+  /* background: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/trunk-glow.png') center / contain no-repeat; */
+  z-index: 4;
+  pointer-events: none;      /* empty space around the post lets clicks through to the carousel */
+}
+
+.sign-post {
+  position: relative;
+  width: 440px;
+  height: 440px;
+  background: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/trunk.png') center / contain no-repeat;
+  opacity: 92%;
+}
+
+.trail-sign {
+  position: absolute;
+  display: block;
+  line-height: 0;
+  pointer-events: auto;
+}
+
+/* boards tip up a little on their nail when hovered. The angle is animated through this
+   custom property instead of animating transform directly: a direct transform animation is
+   drawn from a stretched snapshot (soft while moving), this way the board is redrawn sharp
+   every frame. */
+@property --tilt {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.board {
+  position: relative;
+  display: block;
+  transform-origin: inherit;
+  transform: rotate(var(--tilt));
+  transition: --tilt .35s ease;
+}
+.sign-r:hover .board, .sign-r:focus-visible .board { --tilt: -2deg; }
+.sign-l:hover .board, .sign-l:focus-visible .board { --tilt: 2deg; }
+
+.board img {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* a soft pink glow also fades in around the board's shape (only its color animates) */
+.glow {
+  position: absolute;
+  top: -8%;
+  left: -3%;
+  width: 106%;
+  height: 116%;
+  background-color: rgba(255, 220, 244, 0);
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  filter: blur(5px);
+  pointer-events: none;
+  transition: background-color .4s ease;
+}
+.trail-sign:hover .glow, .trail-sign:focus-visible .glow {
+  background-color: rgba(255, 220, 244, .95);
+}
+
+/* each board crosses the trunk and tilts around the trunk's center line */
+.sign-hatchery  { left: 179.0px; top: 30.8px; width: 167.0px; transform-origin: 42.8px 50%; transform: rotate(3deg); }
+.sign-inventory { left: 89.7px; top: 87.4px; width: 177.3px; transform-origin: 132.1px 50%; transform: rotate(0deg); }
+.sign-explore   { left: 168.6px; top: 140.9px; width: 147.2px; transform-origin: 53.1px 50%; transform: rotate(2.5deg); }
+.sign-shops     { left: 129.0px; top: 190.9px; width: 133.4px; transform-origin: 92.8px 50%; transform: rotate(2.5deg); }
+.sign-merchant  { left: 166.4px; top: 244.2px; width: 173.1px; transform-origin: 55.3px 50%; transform: rotate(-4deg); }
+.sign-rancher   { left: 118.8px; top: 297.7px; width: 157.4px; transform-origin: 102.9px 50%; transform: rotate(-2deg); }
+
+/* ---------- holographic shimmer ---------- */
+/* holder that keeps the oversized shimmer layers clipped to the screen */
+.holo-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* slow thin-film color drift over the whole background (hue blend keeps light and dark values intact) */
+.holo-sweep {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(125deg, #ff6fcf, #ffb36b, #ffe27a, #6bffd8, #6fa8ff, #c47bff, #ff6fcf, #ffb36b, #ffe27a, #6bffd8, #6fa8ff, #c47bff, #ff6fcf);
+  mix-blend-mode: hue;
+  opacity: .18;
+  pointer-events: none;
+  animation: holo-drift 45s ease-in-out infinite alternate;
+}
+
+/* a soft band of light that sweeps across now and then */
+.holo-glint {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 190, 235, .6) 45%, rgba(190, 255, 245, .6) 50%, rgba(205, 195, 255, .6) 55%, transparent 60%);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  animation: holo-glint 16s ease-in-out infinite;
+}
+
+/* iridescence on the trunk, clipped to its shape */
+.trunk-holo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(160deg, #ff6fcf, #ffb36b, #ffe27a, #6bffd8, #6fa8ff, #c47bff, #ff6fcf, #ffb36b, #ffe27a, #6bffd8, #6fa8ff, #c47bff, #ff6fcf);
+  background-size: 100% 300%;
+  -webkit-mask: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/trunk.png') center / contain no-repeat;
+  mask: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/trunk.png') center / contain no-repeat;
+  mix-blend-mode: hue;
+  opacity: .4;
+  pointer-events: none;
+  animation: holo-flow 20s ease-in-out infinite alternate;
+}
+
+/* iridescence on each board, clipped to the board's shape */
+.holo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(100deg, #ff6fcf, #ffb36b, #ffe27a, #6bffd8, #6fa8ff, #c47bff, #ff6fcf, #ffb36b, #ffe27a, #6bffd8, #6fa8ff, #c47bff, #ff6fcf);
+  background-size: 300% 100%;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  mix-blend-mode: hue;
+  opacity: .25;
+  pointer-events: none;
+  animation: holo-slide 18s ease-in-out infinite alternate;
+}
+
+
+.sign-hatchery .holo, .sign-hatchery .glow { -webkit-mask-image: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/signs/hatchery.png'); mask-image: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/signs/hatchery.png'); }
+.sign-inventory .holo, .sign-inventory .glow { -webkit-mask-image: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/signs/inventory.png'); mask-image: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/signs/inventory.png'); }
+.sign-explore .holo, .sign-explore .glow { -webkit-mask-image: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/signs/explore.png'); mask-image: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/signs/explore.png'); }
+.sign-shops .holo, .sign-shops .glow { -webkit-mask-image: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/signs/shops.png'); mask-image: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/signs/shops.png'); }
+.sign-merchant .holo, .sign-merchant .glow { -webkit-mask-image: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/signs/merchant.png'); mask-image: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/signs/merchant.png'); }
+.sign-rancher .holo, .sign-rancher .glow { -webkit-mask-image: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/signs/rancher.png'); mask-image: url('https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images@main/tchaikovsky/signs/rancher.png'); }
+.sign-inventory .holo { animation-delay: -4s; }
+.sign-explore .holo { animation-delay: -9s; }
+.sign-shops .holo { animation-delay: -2s; }
+.sign-merchant .holo { animation-delay: -12s; }
+.sign-rancher .holo { animation-delay: -6s; }
+
+@keyframes holo-drift {
+  from { transform: translate(-12%, -6%) rotate(0deg); }
+  to   { transform: translate(12%, 6%) rotate(8deg); }
+}
+@keyframes holo-glint {
+  0%       { transform: translateX(-60%); }
+  55%,100% { transform: translateX(60%); }
+}
+@keyframes holo-flow {
+  from { background-position: 50% 0%; }
+  to   { background-position: 50% 100%; }
+}
+@keyframes holo-slide {
+  from { background-position: 0% 50%; }
+  to   { background-position: 100% 50%; }
+}
+@keyframes pet-holo-in {
+  0%   { opacity: 0; filter: hue-rotate(-30deg) saturate(1.4) brightness(1.15) drop-shadow(0 0 0 rgba(255, 111, 207, 0)); }
+  30%  { opacity: 1; filter: hue-rotate(18deg) saturate(1.25) brightness(1.08) drop-shadow(0 0 10px rgba(107, 255, 216, .65)); }
+  60%  { filter: hue-rotate(-6deg) saturate(1.1) brightness(1.03) drop-shadow(0 0 8px rgba(196, 123, 255, .5)); }
+  100% { opacity: 1; filter: hue-rotate(0deg) saturate(1) brightness(1) drop-shadow(0 0 0 rgba(255, 111, 207, 0)); }
+}
+@keyframes pet-shine {
+  0%   { -webkit-mask-position: 100% 0; mask-position: 100% 0; filter: contrast(.55) sepia(1) saturate(3) hue-rotate(300deg) brightness(1.4); }
+  62%  { -webkit-mask-position: 0% 0;   mask-position: 0% 0;   filter: contrast(.55) sepia(1) saturate(3) hue-rotate(130deg) brightness(1.4); }
+  100% { -webkit-mask-position: 0% 0;   mask-position: 0% 0;   filter: contrast(.55) sepia(1) saturate(3) hue-rotate(130deg) brightness(1.4); }
+}
+@keyframes pet-aura {
+  from { filter: brightness(0) invert(1) sepia(1) saturate(8) hue-rotate(280deg) blur(7px); }
+  to   { filter: brightness(0) invert(1) sepia(1) saturate(8) hue-rotate(640deg) blur(7px); }
+}
+/* name typing: each letter stays hidden until its turn, then a glowing thin-film shine
+   drifts right to left once. The "-first" copies run when the page opens, so the first pet's
+   name types again when you come back round to it. */
+@keyframes name-hide { from, to { opacity: 0; } }
+@keyframes name-shine {
+  from { background-position: 0% 0; }
+  to   { background-position: 100% 0; }
+}
+@keyframes name-hide-first { from, to { opacity: 0; } }
+@keyframes name-shine-first {
+  from { background-position: 0% 0; }
+  to   { background-position: 100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holo-sweep, .holo-glint, .trunk-holo, .holo { animation: none; }
+  #my-overlay .carousel-item img, #my-overlay .pet-name b, #my-overlay .name-shine, #my-overlay .name-glow, #my-overlay .name-ink::before { animation: none !important; }
+  #my-overlay .pet-link:hover img, #my-overlay .pet-link:focus-visible img { top: 0; left: 0; width: 100%; height: 100%; }
+  #my-overlay .pet-link:hover .pet-shine { opacity: 0; }
+}
+
+  .carousel-wrapper {
+    position: relative;
+    width: 400px; height: 300px;
+    margin: 20px auto 0;
+    overflow: hidden; border-radius: 8px;
+    background: rgba(0,0,0,0);
+  }
+
+  .carousel-item {
+    position: absolute; top:0; left:0;
+    width:100%; height:100%;
+    opacity: 0; transition: opacity .6s ease;
+    display:flex; flex-direction:column;
+    justify-content:center; align-items:center;
+    will-change: opacity;   /* each slide keeps its own layer, so hovers and fades never redraw the name */
+  }
+
+  /* default slide on load */
+  .carousel-item.item-1 {
+    opacity: 1; z-index: 2;
+  }
+
+  /* targeted slides */
+  .pa:target + .carousel-item,
+  #item-1:target + .carousel-item {
+    opacity: 1; z-index: 2;
+  }
+
+  /* leaving pets melt away through a color shift as they fade. The shift sits on the pet
+     only, not the whole slide, so the name is never redrawn when the hover glow starts. */
+  .pet-link {
+    filter: saturate(1.5) hue-rotate(45deg);
+  }
+  .carousel-item.item-1 .pet-link,
+  .pa:target + .carousel-item .pet-link,
+  #item-1:target + .carousel-item .pet-link {
+    filter: saturate(1) hue-rotate(0deg);
+    transition: none;   /* arriving pets come in at true color */
+  }
+
+  /* arriving pet flashes through thin-film colors with a shifting glow, then settles */
+  .pa:target + .carousel-item .pet-img,
+  #item-1:target + .carousel-item .pet-img {
+    animation: pet-holo-in 1.2s ease-out backwards;
+  }
+  /* the name types itself in, then the shine, its glow and a soft light drift across it once */
+  .carousel-item.item-1 .name-ink b {
+    animation: name-hide-first var(--at) linear;
+  }
+  .carousel-item.item-1 .name-shine,
+  .carousel-item.item-1 .name-glow,
+  .carousel-item.item-1 .name-ink::before {
+    animation: name-shine-first 2.8s cubic-bezier(.45, 0, .2, 1) .8s;
+  }
+  .pa:target + .carousel-item .name-ink b,
+  #item-1:target + .carousel-item .name-ink b {
+    animation: name-hide var(--at) linear;
+  }
+  .pa:target + .carousel-item .name-shine,
+  #item-1:target + .carousel-item .name-shine,
+  .pa:target + .carousel-item .name-glow,
+  #item-1:target + .carousel-item .name-glow,
+  .pa:target + .carousel-item .name-ink::before,
+  #item-1:target + .carousel-item .name-ink::before {
+    animation: name-shine 2.8s cubic-bezier(.45, 0, .2, 1) .8s;
+  }
+
+  /* NEW: hide slide 1 when any other is targeted */
+  .pa:target ~ .item-1 {
+    opacity: 0; z-index: 1;
+  }
+  .pa:target ~ .item-1 .name-ink b,
+  .pa:target ~ .item-1 .name-shine,
+  .pa:target ~ .item-1 .name-glow,
+  .pa:target ~ .item-1 .name-ink::before {
+    animation: none;
+  }
+  .pa:target ~ .item-1 .pet-link {
+    filter: saturate(1.5) hue-rotate(45deg);
+    transition: filter .6s ease;
+  }
+
+  /* pets grow by changing their real size, not with a scale transform: browsers draw
+     scale/move animations from a stretched snapshot, which looks soft until it stops.
+     The link box itself never changes size; only the pictures inside it grow, so the
+     name and arrows around it can't be nudged by even a fraction of a pixel. */
+  .pet-link {
+    position: relative; display: block;
+    width: 200px; height: 200px;
+    margin: 0;
+    line-height: 0;
+    transition: filter .6s ease;
+  }
+  .pet-link img {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    transition: top .6s cubic-bezier(.22, .61, .36, 1), left .6s cubic-bezier(.22, .61, .36, 1),
+                width .6s cubic-bezier(.22, .61, .36, 1), height .6s cubic-bezier(.22, .61, .36, 1);
+  }
+  .pet-img {
+    border-radius: 4px;
+  }
+
+  /* hovering a pet: it grows a little, a soft glow fades in behind it and drifts through
+     pink, gold, mint and lilac, and a holographic shine sweeps across it. The color loops
+     pause instead of resetting, so everything fades out smoothly when the mouse leaves. */
+  .pet-link:hover img, .pet-link:focus-visible img {
+    top: -6px; left: -6px;   /* grows evenly from its center */
+    width: 212px; height: 212px;
+  }
+  .pet-aura, .pet-shine {
+    opacity: 0;
+    pointer-events: none;
+    animation-play-state: paused;
+  }
+  /* glow: a blurred, tinted silhouette of the pet sitting just behind it */
+  .pet-link .pet-aura {
+    filter: brightness(0) invert(1) sepia(1) saturate(8) hue-rotate(280deg) blur(7px);
+    transition: opacity .6s ease,
+                top .6s cubic-bezier(.22, .61, .36, 1), left .6s cubic-bezier(.22, .61, .36, 1),
+                width .6s cubic-bezier(.22, .61, .36, 1), height .6s cubic-bezier(.22, .61, .36, 1);
+    animation: pet-aura 6s linear infinite paused;
+  }
+  /* shine: a tinted copy of the pet, seen only through a soft band that sweeps across it */
+  .pet-link .pet-shine {
+    filter: contrast(.55) sepia(1) saturate(3) hue-rotate(300deg) brightness(1.4);
+    -webkit-mask-image: linear-gradient(105deg, transparent 45.5%, rgba(0, 0, 0, .55) 48.5%, #000 50%, rgba(0, 0, 0, .55) 51.5%, transparent 54.5%);
+    mask-image: linear-gradient(105deg, transparent 45.5%, rgba(0, 0, 0, .55) 48.5%, #000 50%, rgba(0, 0, 0, .55) 51.5%, transparent 54.5%);
+    -webkit-mask-size: 300% 100%; mask-size: 300% 100%;
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+    -webkit-mask-position: 100% 0; mask-position: 100% 0;
+    transition: opacity .5s ease,
+                top .6s cubic-bezier(.22, .61, .36, 1), left .6s cubic-bezier(.22, .61, .36, 1),
+                width .6s cubic-bezier(.22, .61, .36, 1), height .6s cubic-bezier(.22, .61, .36, 1);
+    animation: pet-shine 3.2s cubic-bezier(.45, .05, .55, .95) infinite paused;
+  }
+  .pet-link:hover .pet-aura, .pet-link:focus-visible .pet-aura {
+    opacity: .8;
+    animation-play-state: running;
+  }
+  .pet-link:hover .pet-shine, .pet-link:focus-visible .pet-shine {
+    opacity: .55;
+    animation-play-state: running;
+  }
+  /* names use the signs' lettering, Palatino bold, in white with a faint charcoal edge so
+     they read on the pale sky. Palatino comes with Windows, Mac and iPhone; other devices
+     use the closest serif they have. The name sits just under the pet and out of the
+     page flow, so the pet stays centered between the arrows. */
+  .pet-name {
+    position: absolute; left: 0; right: 0;
+    top: calc(50% + 110px);
+    margin: 0;
+    text-align: center;
+    font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, 'URW Palladio L', P052, 'TeX Gyre Pagella', Georgia, serif;
+    font-size: 21px; font-weight: bold;
+    line-height: 1.2;
+    letter-spacing: .03em;
+    font-kerning: none;   /* keeps the letters exactly under the shine copy */
+    white-space: nowrap;
+    color: #fff;
+    text-shadow: 0 0 4px rgba(31, 36, 39, .45);
+    pointer-events: none;
+  }
+  .name-ink {
+    position: relative;
+    display: inline-block;
+  }
+  /* each letter appears .07s after the one before it (room for names up to 20 letters) */
+  .name-ink b {
+    font-weight: inherit;
+    --at: calc(.3s + var(--k, 0) * .07s);
+  }
+  .name-ink b:nth-child(2) { --k: 1; }
+  .name-ink b:nth-child(3) { --k: 2; }
+  .name-ink b:nth-child(4) { --k: 3; }
+  .name-ink b:nth-child(5) { --k: 4; }
+  .name-ink b:nth-child(6) { --k: 5; }
+  .name-ink b:nth-child(7) { --k: 6; }
+  .name-ink b:nth-child(8) { --k: 7; }
+  .name-ink b:nth-child(9) { --k: 8; }
+  .name-ink b:nth-child(10) { --k: 9; }
+  .name-ink b:nth-child(11) { --k: 10; }
+  .name-ink b:nth-child(12) { --k: 11; }
+  .name-ink b:nth-child(13) { --k: 12; }
+  .name-ink b:nth-child(14) { --k: 13; }
+  .name-ink b:nth-child(15) { --k: 14; }
+  .name-ink b:nth-child(16) { --k: 15; }
+  .name-ink b:nth-child(17) { --k: 16; }
+  .name-ink b:nth-child(18) { --k: 17; }
+  .name-ink b:nth-child(19) { --k: 18; }
+  .name-ink b:nth-child(20) { --k: 19; }
+  /* the shine: copies of the name laid over it, colored only inside a soft thin-film band
+     (pink, purple, a pale lavender middle, blue, violet) that drifts across. The lower copy is
+     blurred into a colored glow; the top one keeps the lit letters crisp. */
+  .name-shine, .name-glow {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+    background: linear-gradient(100deg, transparent 33%, rgba(255, 150, 214, 0) 35%, #ff96d6 40%, #c393ff 45%, #f3ecff 50%, #8fbcff 55%, #b48aff 60%, rgba(180, 138, 255, 0) 65%, transparent 67%) 0 0 / 300% 100% no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  /* kept faint: the colors only tint the white letters as they pass */
+  .name-shine {
+    opacity: .45;
+  }
+  .name-glow {
+    filter: blur(3px);
+    opacity: .3;
+  }
+  /* radiance: a soft pool of light that travels with the band, a little taller than the name */
+  .name-ink::before {
+    content: '';
+    position: absolute; top: -10px; bottom: -10px; left: 0; right: 0;
+    background: radial-gradient(ellipse 10% 46% at 50% 50%, rgba(246, 240, 255, .3), rgba(206, 190, 255, .12) 55%, rgba(206, 190, 255, 0)) 0 0 / 300% 100% no-repeat;
+    filter: blur(5px);
+    pointer-events: none;
+  }
+
+  .arrow {
+    position:absolute; top:50%;
+    width:0; height:0;
+    border:solid #000; border-width:0 4px 4px 0;
+    padding:10px; cursor:pointer;
+    transform: translateY(-50%);
+opacity: 15%;
+  }
+  .arrow.prev {
+    left: 45px; transform: translateY(-50%) rotate(135deg);
+  }
+  .arrow.next {
+    right: 45px; transform: translateY(-50%) rotate(-45deg);
+  }
+
+#tchaitext {
+  position: absolute;      /* take it out of the document flow */
+  top: clamp(20px, 5vh, 60px);   /* room above it grows a little on taller screens */
+  /* the lettering spans exactly the content below it, from the left tip of the
+     Inventory sign to the pet's right arrow, and the whole group is centered */
+  left: calc(50% - 324px);
+  width: 648px;
+  opacity: 0.5;            /* same as 50% */
+  z-index: 3;              /* above the carousel */
+ }
+
+ .fade-in {
+  animation: fadeIn 5s ease-in-out forwards;
+}
+
+ @keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 0.5; }
+}
