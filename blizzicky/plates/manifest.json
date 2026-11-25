@@ -1,0 +1,913 @@
+{
+ "moments": 3,
+ "walls": {
+  "7-ginger-effect-derp-baby": {
+   "L": [
+    {
+     "file": "w-7-ginger-effect-derp-baby-L0.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 129654
+    },
+    {
+     "file": "w-7-ginger-effect-derp-baby-L1.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 127384
+    },
+    {
+     "file": "w-7-ginger-effect-derp-baby-L2.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 125716
+    }
+   ],
+   "P": [
+    {
+     "file": "w-7-ginger-effect-derp-baby-P0.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 60652
+    },
+    {
+     "file": "w-7-ginger-effect-derp-baby-P1.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 61566
+    },
+    {
+     "file": "w-7-ginger-effect-derp-baby-P2.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 62380
+    }
+   ],
+   "poster": {
+    "L": {
+     "file": "p-7-ginger-effect-derp-baby-L.webp",
+     "px": [
+      480,
+      270
+     ],
+     "bytes": 4916
+    },
+    "P": {
+     "file": "p-7-ginger-effect-derp-baby-P.webp",
+     "px": [
+      195,
+      422
+     ],
+     "bytes": 5938
+    }
+   }
+  },
+  "30-black-effect-undead": {
+   "L": [
+    {
+     "file": "w-30-black-effect-undead-L0.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 57526
+    },
+    {
+     "file": "w-30-black-effect-undead-L1.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 57682
+    },
+    {
+     "file": "w-30-black-effect-undead-L2.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 57588
+    }
+   ],
+   "P": [
+    {
+     "file": "w-30-black-effect-undead-P0.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 32754
+    },
+    {
+     "file": "w-30-black-effect-undead-P1.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 32904
+    },
+    {
+     "file": "w-30-black-effect-undead-P2.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 33044
+    }
+   ],
+   "poster": {
+    "L": {
+     "file": "p-30-black-effect-undead-L.webp",
+     "px": [
+      480,
+      270
+     ],
+     "bytes": 3410
+    },
+    "P": {
+     "file": "p-30-black-effect-undead-P.webp",
+     "px": [
+      195,
+      422
+     ],
+     "bytes": 2558
+    }
+   }
+  },
+  "45-albino-effect-stardust": {
+   "L": [
+    {
+     "file": "w-45-albino-effect-stardust-L0.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 109026
+    },
+    {
+     "file": "w-45-albino-effect-stardust-L1.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 108624
+    },
+    {
+     "file": "w-45-albino-effect-stardust-L2.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 108828
+    }
+   ],
+   "P": [
+    {
+     "file": "w-45-albino-effect-stardust-P0.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 75828
+    },
+    {
+     "file": "w-45-albino-effect-stardust-P1.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 75896
+    },
+    {
+     "file": "w-45-albino-effect-stardust-P2.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 76052
+    }
+   ],
+   "poster": {
+    "L": {
+     "file": "p-45-albino-effect-stardust-L.webp",
+     "px": [
+      480,
+      270
+     ],
+     "bytes": 5500
+    },
+    "P": {
+     "file": "p-45-albino-effect-stardust-P.webp",
+     "px": [
+      195,
+      422
+     ],
+     "bytes": 6988
+    }
+   }
+  },
+  "71-albino-effect-derp": {
+   "L": [
+    {
+     "file": "w-71-albino-effect-derp-L0.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 142022
+    },
+    {
+     "file": "w-71-albino-effect-derp-L1.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 140866
+    },
+    {
+     "file": "w-71-albino-effect-derp-L2.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 142424
+    }
+   ],
+   "P": [
+    {
+     "file": "w-71-albino-effect-derp-P0.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 74560
+    },
+    {
+     "file": "w-71-albino-effect-derp-P1.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 74042
+    },
+    {
+     "file": "w-71-albino-effect-derp-P2.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 74770
+    }
+   ],
+   "poster": {
+    "L": {
+     "file": "p-71-albino-effect-derp-L.webp",
+     "px": [
+      480,
+      270
+     ],
+     "bytes": 6964
+    },
+    "P": {
+     "file": "p-71-albino-effect-derp-P.webp",
+     "px": [
+      195,
+      422
+     ],
+     "bytes": 6836
+    }
+   }
+  },
+  "33-rainbow-effect-cosmic": {
+   "L": [
+    {
+     "file": "w-33-rainbow-effect-cosmic-L0.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 127404
+    },
+    {
+     "file": "w-33-rainbow-effect-cosmic-L1.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 126668
+    },
+    {
+     "file": "w-33-rainbow-effect-cosmic-L2.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 125090
+    }
+   ],
+   "P": [
+    {
+     "file": "w-33-rainbow-effect-cosmic-P0.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 80164
+    },
+    {
+     "file": "w-33-rainbow-effect-cosmic-P1.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 79454
+    },
+    {
+     "file": "w-33-rainbow-effect-cosmic-P2.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 79752
+    }
+   ],
+   "poster": {
+    "L": {
+     "file": "p-33-rainbow-effect-cosmic-L.webp",
+     "px": [
+      480,
+      270
+     ],
+     "bytes": 4198
+    },
+    "P": {
+     "file": "p-33-rainbow-effect-cosmic-P.webp",
+     "px": [
+      195,
+      422
+     ],
+     "bytes": 6872
+    }
+   }
+  },
+  "37-albino-effect-frostlight": {
+   "L": [
+    {
+     "file": "w-37-albino-effect-frostlight-L0.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 54330
+    },
+    {
+     "file": "w-37-albino-effect-frostlight-L1.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 54484
+    },
+    {
+     "file": "w-37-albino-effect-frostlight-L2.webp",
+     "px": [
+      1920,
+      1080
+     ],
+     "bytes": 53246
+    }
+   ],
+   "P": [
+    {
+     "file": "w-37-albino-effect-frostlight-P0.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 34222
+    },
+    {
+     "file": "w-37-albino-effect-frostlight-P1.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 34368
+    },
+    {
+     "file": "w-37-albino-effect-frostlight-P2.webp",
+     "px": [
+      780,
+      1688
+     ],
+     "bytes": 34498
+    }
+   ],
+   "poster": {
+    "L": {
+     "file": "p-37-albino-effect-frostlight-L.webp",
+     "px": [
+      480,
+      270
+     ],
+     "bytes": 1848
+    },
+    "P": {
+     "file": "p-37-albino-effect-frostlight-P.webp",
+     "px": [
+      195,
+      422
+     ],
+     "bytes": 1956
+    }
+   }
+  }
+ },
+ "bars": {
+  "L": {
+   "ink": [
+    {
+     "file": "b-L-ink-7-ginger-effect-derp-baby.webp",
+     "px": [
+      847,
+      130
+     ],
+     "bytes": 12938
+    },
+    {
+     "file": "b-L-ink-30-black-effect-undead.webp",
+     "px": [
+      847,
+      130
+     ],
+     "bytes": 13564
+    },
+    {
+     "file": "b-L-ink-45-albino-effect-stardust.webp",
+     "px": [
+      847,
+      130
+     ],
+     "bytes": 13614
+    },
+    {
+     "file": "b-L-ink-71-albino-effect-derp.webp",
+     "px": [
+      847,
+      130
+     ],
+     "bytes": 14356
+    },
+    {
+     "file": "b-L-ink-33-rainbow-effect-cosmic.webp",
+     "px": [
+      847,
+      130
+     ],
+     "bytes": 14032
+    },
+    {
+     "file": "b-L-ink-37-albino-effect-frostlight.webp",
+     "px": [
+      847,
+      130
+     ],
+     "bytes": 14114
+    }
+   ],
+   "lit": [
+    {
+     "file": "b-L-lit-7-ginger-effect-derp-baby.webp",
+     "px": [
+      847,
+      130
+     ],
+     "bytes": 13566
+    },
+    {
+     "file": "b-L-lit-30-black-effect-undead.webp",
+     "px": [
+      847,
+      130
+     ],
+     "bytes": 14260
+    },
+    {
+     "file": "b-L-lit-45-albino-effect-stardust.webp",
+     "px": [
+      847,
+      130
+     ],
+     "bytes": 14042
+    },
+    {
+     "file": "b-L-lit-71-albino-effect-derp.webp",
+     "px": [
+      847,
+      130
+     ],
+     "bytes": 15268
+    },
+    {
+     "file": "b-L-lit-33-rainbow-effect-cosmic.webp",
+     "px": [
+      847,
+      130
+     ],
+     "bytes": 14688
+    },
+    {
+     "file": "b-L-lit-37-albino-effect-frostlight.webp",
+     "px": [
+      847,
+      130
+     ],
+     "bytes": 14692
+    }
+   ]
+  },
+  "P": {
+   "ink": [
+    {
+     "file": "b-P-ink-7-ginger-effect-derp-baby.webp",
+     "px": [
+      798,
+      260
+     ],
+     "bytes": 20914
+    },
+    {
+     "file": "b-P-ink-30-black-effect-undead.webp",
+     "px": [
+      798,
+      260
+     ],
+     "bytes": 21864
+    },
+    {
+     "file": "b-P-ink-45-albino-effect-stardust.webp",
+     "px": [
+      798,
+      260
+     ],
+     "bytes": 22156
+    },
+    {
+     "file": "b-P-ink-71-albino-effect-derp.webp",
+     "px": [
+      798,
+      260
+     ],
+     "bytes": 24124
+    },
+    {
+     "file": "b-P-ink-33-rainbow-effect-cosmic.webp",
+     "px": [
+      798,
+      260
+     ],
+     "bytes": 22988
+    },
+    {
+     "file": "b-P-ink-37-albino-effect-frostlight.webp",
+     "px": [
+      798,
+      260
+     ],
+     "bytes": 23120
+    }
+   ],
+   "lit": [
+    {
+     "file": "b-P-lit-7-ginger-effect-derp-baby.webp",
+     "px": [
+      798,
+      260
+     ],
+     "bytes": 21890
+    },
+    {
+     "file": "b-P-lit-30-black-effect-undead.webp",
+     "px": [
+      798,
+      260
+     ],
+     "bytes": 23008
+    },
+    {
+     "file": "b-P-lit-45-albino-effect-stardust.webp",
+     "px": [
+      798,
+      260
+     ],
+     "bytes": 23448
+    },
+    {
+     "file": "b-P-lit-71-albino-effect-derp.webp",
+     "px": [
+      798,
+      260
+     ],
+     "bytes": 25356
+    },
+    {
+     "file": "b-P-lit-33-rainbow-effect-cosmic.webp",
+     "px": [
+      798,
+      260
+     ],
+     "bytes": 23838
+    },
+    {
+     "file": "b-P-lit-37-albino-effect-frostlight.webp",
+     "px": [
+      798,
+      260
+     ],
+     "bytes": 24294
+    }
+   ]
+  }
+ },
+ "bar": {
+  "L": {
+   "px": [
+    847,
+    130
+   ],
+   "cell": [
+    7.0,
+    13.0
+   ],
+   "labels": [
+    {
+     "t": "HATCHERY",
+     "box": [
+      63.0,
+      65.0,
+      112.0,
+      26.0
+     ]
+    },
+    {
+     "t": "INVENTORY",
+     "box": [
+      196.0,
+      65.0,
+      126.0,
+      26.0
+     ]
+    },
+    {
+     "t": "EXPLORE",
+     "box": [
+      343.0,
+      65.0,
+      98.0,
+      26.0
+     ]
+    },
+    {
+     "t": "SHOPS",
+     "box": [
+      462.0,
+      65.0,
+      70.0,
+      26.0
+     ]
+    },
+    {
+     "t": "MERCHANT",
+     "box": [
+      553.0,
+      65.0,
+      112.0,
+      26.0
+     ]
+    },
+    {
+     "t": "RANCHER",
+     "box": [
+      686.0,
+      65.0,
+      98.0,
+      26.0
+     ]
+    }
+   ],
+   "index": [
+    {
+     "i": 0,
+     "box": [
+      42.0,
+      13.0,
+      126.0,
+      26.0
+     ]
+    },
+    {
+     "i": 1,
+     "box": [
+      168.0,
+      13.0,
+      126.0,
+      26.0
+     ]
+    },
+    {
+     "i": 2,
+     "box": [
+      294.0,
+      13.0,
+      126.0,
+      26.0
+     ]
+    },
+    {
+     "i": 3,
+     "box": [
+      420.0,
+      13.0,
+      126.0,
+      26.0
+     ]
+    },
+    {
+     "i": 4,
+     "box": [
+      546.0,
+      13.0,
+      126.0,
+      26.0
+     ]
+    },
+    {
+     "i": 5,
+     "box": [
+      672.0,
+      13.0,
+      126.0,
+      26.0
+     ]
+    }
+   ],
+   "prev": [
+    14.0,
+    13.0,
+    14.0,
+    26.0
+   ],
+   "next": [
+    819.0,
+    13.0,
+    14.0,
+    26.0
+   ]
+  },
+  "P": {
+   "px": [
+    399,
+    130
+   ],
+   "cell": [
+    7.0,
+    13.0
+   ],
+   "labels": [
+    {
+     "t": "HATCHERY",
+     "box": [
+      21.0,
+      65.0,
+      112.0,
+      26.0
+     ]
+    },
+    {
+     "t": "INVENTORY",
+     "box": [
+      140.0,
+      65.0,
+      126.0,
+      26.0
+     ]
+    },
+    {
+     "t": "EXPLORE",
+     "box": [
+      273.0,
+      65.0,
+      98.0,
+      26.0
+     ]
+    },
+    {
+     "t": "SHOPS",
+     "box": [
+      49.0,
+      91.0,
+      70.0,
+      26.0
+     ]
+    },
+    {
+     "t": "MERCHANT",
+     "box": [
+      126.0,
+      91.0,
+      112.0,
+      26.0
+     ]
+    },
+    {
+     "t": "RANCHER",
+     "box": [
+      245.0,
+      91.0,
+      98.0,
+      26.0
+     ]
+    }
+   ],
+   "index": [
+    {
+     "i": 0,
+     "box": [
+      42.0,
+      13.0,
+      49.0,
+      26.0
+     ]
+    },
+    {
+     "i": 1,
+     "box": [
+      91.0,
+      13.0,
+      49.0,
+      26.0
+     ]
+    },
+    {
+     "i": 2,
+     "box": [
+      140.0,
+      13.0,
+      49.0,
+      26.0
+     ]
+    },
+    {
+     "i": 3,
+     "box": [
+      189.0,
+      13.0,
+      49.0,
+      26.0
+     ]
+    },
+    {
+     "i": 4,
+     "box": [
+      238.0,
+      13.0,
+      49.0,
+      26.0
+     ]
+    },
+    {
+     "i": 5,
+     "box": [
+      287.0,
+      13.0,
+      49.0,
+      26.0
+     ]
+    }
+   ],
+   "prev": [
+    14.0,
+    13.0,
+    14.0,
+    26.0
+   ],
+   "next": [
+    371.0,
+    13.0,
+    14.0,
+    26.0
+   ]
+  }
+ }
+}

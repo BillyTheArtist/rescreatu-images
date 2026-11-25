@@ -54,8 +54,20 @@ SCENE_H = 112            # 112 * 13px = 1456px
 LIFE_H = 36              # the sparse "life" band is this tall
 
 REVEAL = "1.4s"          # focused pet's stepped reveal sweep
-SWEEP = "1.4s"           # environment sweep when the kind changes
+SWEEP = "1.4s"           # one pet's wall giving way to the next
 SLIDE = ".34s"           # slide between pets
+LIFE = "21s"             # one turn of the three captured moments
+
+# ---- the row, as three numbers and nothing else ----------------------
+# FOCUS is the focused pet's size and the pet art's own size: 200 px is
+# native, so nothing is ever upscaled. GAP is the clear wall either side
+# of it before the first neighbour, and STEP the distance between
+# neighbours beyond that. NEAR is how big a neighbour is.
+FOCUS = "200px"
+GAP = "200px"
+STEP = "150px"
+NEAR = "0.58"
+PLATES = "plates/"       # where the captured plates live
 BOOT_HOLD = "2.0s"       # boot screen hold before its .45s fade (measured; see README)
 TYPE_CPS = 34.0          # name typing speed, characters a second
 MAX_NAME = 20            # name letters that get their own animation delay
@@ -98,6 +110,44 @@ FAM = {
     "walls":  (" .:-=+*#%@", " .-=+*#%@@"),
     "growth": ("  .,,;;oe&", " .,;;oe&%%"),
 }
+
+# --------------------------------------------------------------------------- #
+# the plates                                                                  #
+# --------------------------------------------------------------------------- #
+
+PLATE_DIR = os.environ.get("BZK_PLATE_DIR") or os.path.join(HERE, "plates")
+
+
+def read_plates(warn):
+    """The manifest written by the capture: every plate's file name and size,
+    and the bar's own geometry in CSS pixels.
+
+    Nothing here invents a number. If the manifest is missing the build still
+    runs and says so, and the page comes out with no wall, which is loud.
+    """
+    path = os.path.join(PLATE_DIR, "manifest.json")
+    if not os.path.isfile(path):
+        warn.append("no plates/manifest.json - run the capture (bake-work/shoot.py)")
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as exc:
+        warn.append("plates/manifest.json did not parse (%s)" % exc)
+        return None
+
+
+def attach_plates(pets, man, warn):
+    for p in pets:
+        p["plate"] = None
+        if not man:
+            continue
+        e = man["walls"].get(p["key"])
+        if not e:
+            warn.append("no plates for %s" % p["key"])
+            continue
+        p["plate"] = e
+
 
 # --------------------------------------------------------------------------- #
 # pets.txt                                                                    #
@@ -242,397 +292,6 @@ def read_pets(path):
 # --------------------------------------------------------------------------- #
 
 
-def h2(ix, iy, seed):
-    """Deterministic 0..1 hash. Mixed in sequence, not added, so the lattice
-    has no diagonal correlation (which showed up as streaks in the scenes)."""
-    n = ix & 0xFFFFFFFF
-    n = (n * 0x9E3779B1 + (iy & 0xFFFFFFFF)) & 0xFFFFFFFF
-    n ^= n >> 15
-    n = (n * 0x85EBCA6B) & 0xFFFFFFFF
-    n = (n + (seed & 0xFFFFFFFF) * 0xC2B2AE35) & 0xFFFFFFFF
-    n ^= n >> 13
-    n = (n * 0x27D4EB2F) & 0xFFFFFFFF
-    n ^= n >> 16
-    return n / 4294967295.0
-
-
-def vnoise(x, y, seed):
-    ix, iy = math.floor(x), math.floor(y)
-    fx, fy = x - ix, y - iy
-    u = fx * fx * (3 - 2 * fx)
-    v = fy * fy * (3 - 2 * fy)
-    a = h2(ix, iy, seed)
-    b = h2(ix + 1, iy, seed)
-    c = h2(ix, iy + 1, seed)
-    d = h2(ix + 1, iy + 1, seed)
-    return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v
-
-
-def fbm(x, y, seed, octaves=3):
-    amp, f, s, norm = 1.0, 1.0, 0.0, 0.0
-    for i in range(octaves):
-        s += amp * vnoise(x * f, y * f, seed + i * 101)
-        norm += amp
-        amp *= 0.5
-        f *= 2.0
-    return s / norm
-
-
-def clamp01(v):
-    return 0.0 if v < 0 else (1.0 if v > 1 else v)
-
-
-def calm(x, y, w, h):
-    """Attenuate density around the centre row, where the pets stand.
-
-    The scene grid is centred on the viewport, so grid row h/2 is the middle of
-    the screen and the pets stand a little above it.
-    """
-    cy = 0.47 * h
-    dy = abs(y - cy) / (0.13 * h)
-    dx = abs(x - w / 2.0) / (0.26 * w)
-    r = math.sqrt(dx * dx * 0.6 + dy * dy)
-    return 0.34 + 0.66 * clamp01(r)
-
-
-def grid(w, h, fill=" "):
-    return [[fill] * w for _ in range(h)]
-
-
-def put(g, x, y, ch):
-    if 0 <= y < len(g) and 0 <= x < len(g[0]):
-        g[y][x] = ch
-
-
-def gl(d, fam, lit=False):
-    s = FAM[fam][1 if lit else 0]
-    i = int(clamp01(d) * 9.999)
-    return s[i]
-
-# --------------------------------------------------------------------------- #
-# scenes                                                                      #
-# --------------------------------------------------------------------------- #
-
-
-def sparse(w, hh, s, chars, count, key):
-    """Two alternative sparse grids; a few characters differ between them."""
-    out = []
-    for k in range(2):
-        g = grid(w, hh)
-        for i in range(count):
-            x = int(h2(i, 1, s + key) * w)
-            y = int(h2(i, 2, s + key + 7) * hh)
-            # most characters are the same in both grids; some re-letter
-            j = int(h2(i, 3 + (k if h2(i, 9, s + key) > 0.72 else 0), s + key + 13)
-                    * len(chars))
-            put(g, x, y, chars[j])
-        out.append(g)
-    return out
-
-
-def scene_sky(w, h, s):
-    """Drifting cloud banks, a sun, quotes and carets thinning to dots."""
-    far, near = grid(w, h), grid(w, h)
-    for y in range(h):
-        for x in range(w):
-            n = fbm(x / 40.0, y / 15.0, s)
-            band = 0.5 + 0.5 * math.sin(y / 11.0 + n * 3.0 + x / 190.0)
-            d = (n * 1.7 - 0.44) + 0.42 * band
-            d *= 1.0 - 0.38 * (y / float(h))
-            d *= calm(x, y, w, h)
-            if d > 0.05:
-                far[y][x] = gl(d, "air")
-    sx, sy = 0.5 * w + 92, 0.25 * h
-    for y in range(h):
-        for x in range(w):
-            dx, dy = (x - sx) * 0.52, (y - sy)
-            r = math.sqrt(dx * dx + dy * dy)
-            th = math.atan2(dy, dx)
-            ray = max(0.0, math.cos(9.0 * th + 0.6)) ** 3
-            d = math.exp(-r / 9.0) + 0.55 * ray * math.exp(-r / 34.0)
-            n = fbm(x / 20.0, y / 14.0, s + 7)
-            d = d * calm(x, y, w, h) * (0.7 + 0.5 * n)
-            # high cloud edges catch the light, in the top third only
-            d = max(d, (fbm(x / 34.0, y / 12.0, s + 3) - 0.70) * 2.4
-                    * max(0.0, 1.0 - y / (0.52 * h)) * calm(x, y, w, h))
-            if d > 0.07:
-                near[y][x] = gl(min(1.0, d * 1.3), "ceil", True)
-    return far, near, sparse(w, LIFE_H, s, "'·*+.", 540, 31)
-
-
-def scene_water(w, h, s):
-    """Caustic nets, a shaft of light from above, waves and parentheses."""
-    far, near = grid(w, h), grid(w, h)
-    for y in range(h):
-        for x in range(w):
-            n1 = fbm(x / 24.0, y / 12.0, s)
-            n2 = fbm(x / 15.0, y / 19.0, s + 5)
-            c = abs(math.sin(x / 6.8 + n1 * 2.6) * math.sin(y / 5.0 + n2 * 2.2))
-            d = (c ** 1.25) * (0.6 + 0.5 * n1)
-            d *= calm(x, y, w, h)
-            if d > 0.06:
-                far[y][x] = gl(d, "water")
-    for y in range(h):
-        cx = 0.5 * w - 52 + y * 0.52
-        half = 9.0 + y * 0.30
-        for x in range(w):
-            t = abs(x - cx) / half
-            d = 0.0
-            if t < 1.0:
-                d = (1.0 - t) ** 1.3 * (1.0 - 0.45 * (y / float(h)))
-                d *= 0.6 + 0.4 * fbm(x / 6.0, y / 4.0, s + 11)
-            # surface waves across the top of the grid
-            if y < 26:
-                d = max(d, 0.5 * abs(math.sin(x / 6.2 + y * 0.42 + fbm(x / 18.0, 0.3, s + 2) * 2))
-                        * (1 - y / 26.0))
-            d *= calm(x, y, w, h)
-            if d > 0.08:
-                near[y][x] = gl(min(1.0, d * 1.25), "water", True)
-    return far, near, sparse(w, LIFE_H, s, "o.·(0", 400, 61)
-
-
-def scene_cathedral(w, h, s):
-    """Piers, pointed lancet windows, shafts of light, bars and hashes."""
-    far, near = grid(w, h), grid(w, h)
-    step = 46
-    piers = [int(w / 2 + (k - 4) * step + 23) for k in range(9)]
-    for px in piers:
-        for y in range(h):
-            d = 0.85 - 0.22 * (y / float(h)) + 0.16 * fbm(px / 4.0, y / 7.0, s + 2)
-            d *= 0.45 + 0.55 * calm(px, y, w, h)
-            for o in (-2, -1, 0, 1, 2):
-                dd = d * (1.0 - 0.15 * abs(o))
-                if dd > 0.08:
-                    put(far, px + o, y, gl(min(1.0, dd), "racks"))
-    # a lancet window in every bay between two piers
-    for k in range(len(piers) - 1):
-        cx = (piers[k] + piers[k + 1]) // 2
-        top, bot = 22, 68
-        for y in range(top, bot):
-            t = (y - top) / float(bot - top)
-            half = int(1 + 15 * min(1.0, t * 1.7))
-            for x in range(cx - half, cx + half + 1):
-                edge = 1.0 if (x <= cx - half + 1 or x >= cx + half - 1) else 0.0
-                d = (0.34 + 0.40 * t + 0.3 * edge)
-                d *= 0.55 + 0.45 * calm(x, y, w, h)
-                d *= 0.75 + 0.25 * fbm(x / 5.0, y / 5.0, s + 13)
-                if d > 0.07:
-                    put(far, x, y, gl(min(1.0, d), "racks"))
-    # light falling out of each window, leaning with the hour
-    for y in range(h):
-        for x in range(w):
-            d = 0.0
-            for k in range(len(piers) - 1):
-                cx = (piers[k] + piers[k + 1]) / 2.0 + (y - 44) * 0.46
-                t = abs(x - cx) / (7.0 + y * 0.18)
-                if t < 1.0 and y > 20:
-                    d = max(d, (1.0 - t) ** 1.25 * max(0.0, 1.0 - (y - 20) / 86.0))
-            d *= (0.5 + 0.5 * calm(x, y, w, h)) * (0.72 + 0.28 * fbm(x / 7.0, y / 11.0, s + 17))
-            if d > 0.09:
-                near[y][x] = gl(min(1.0, d * 1.2), "ceil", True)
-    return far, near, sparse(w, LIFE_H, s, ".·'+:", 360, 91)
-
-
-def scene_garden(w, h, s):
-    """Foliage growing off the floor, vines, sparse blooms."""
-    far, near = grid(w, h), grid(w, h)
-
-    def floor_top(x):
-        clump = fbm(x / 20.0, 0.5, s) * 0.68 + fbm(x / 6.0, 3.5, s + 1) * 0.32
-        return int(66 + 20 * (1.0 - clump))
-
-    # the bank of foliage the pets stand in front of
-    for x in range(w):
-        topy = floor_top(x)
-        for y in range(topy, h):
-            t = (y - topy) / float(max(1, h - topy))
-            d = (0.55 + 0.9 * t) * (0.6 + 0.55 * fbm(x / 8.0, y / 5.0, s + 3))
-            d *= 0.55 + 0.45 * calm(x, y, w, h)
-            if d > 0.06:
-                far[y][x] = gl(min(1.0, d), "growth")
-    # canopy across the top of the grid
-    for y in range(0, 34):
-        for x in range(w):
-            n = fbm(x / 13.0, y / 7.0, s + 19)
-            d = (n * 1.5 - 0.42) * max(0.25, 1.0 - y / 34.0)
-            d *= 0.6 + 0.4 * calm(x, y, w, h)
-            if d > 0.06:
-                far[y][x] = gl(min(1.0, d), "growth")
-    # vines hanging out of the canopy
-    for i in range(34):
-        x0 = h2(i, 1, s + 29) * w
-        ln = int(28 + 52 * h2(i, 2, s + 31))
-        for y in range(0, ln):
-            x = int(x0 + 5.0 * math.sin(y / 13.0 + i * 1.7))
-            d = (0.85 - 0.4 * (y / float(ln))) * (0.5 + 0.5 * calm(x, y, w, h))
-            if d > 0.07:
-                put(far, x, y, gl(min(1.0, d), "growth"))
-                if y > 2:
-                    put(far, x + 1, y, gl(min(1.0, d * 0.7), "growth"))
-            if y % 5 == 2:
-                put(far, x + (2 if i % 2 else -1), y, ";")
-    # lit leading edge where the foliage meets the air
-    for x in range(w):
-        topy = floor_top(x)
-        for y in range(topy - 4, topy + 12):
-            n = fbm(x / 5.0, y / 4.0, s + 9)
-            d = (n - 0.36) * 2.6 * (0.45 + 0.55 * calm(x, y, w, h))
-            if d > 0.08:
-                put(near, x, y, gl(min(1.0, d), "growth", True))
-    for i in range(260):
-        x = int(h2(i, 5, s + 37) * w)
-        y = int(floor_top(x) - 6 + 30 * h2(i, 6, s + 41))
-        if calm(x, y, w, h) > 0.45:
-            put(near, x, y, "&%oe"[int(h2(i, 7, s + 43) * 4)])
-    return far, near, sparse(w, LIFE_H, s, "o&e,;", 320, 103)
-
-
-def scene_void(w, h, s):
-    """Rose mist, thorn silhouettes, motes, a few steady stars."""
-    far, near = grid(w, h), grid(w, h)
-    for y in range(h):
-        for x in range(w):
-            n = fbm(x / 46.0, y / 26.0, s)
-            d = (n - 0.36) * 1.9
-            d *= calm(x, y, w, h) * 0.95
-            if d > 0.06:
-                far[y][x] = gl(d, "air")
-    for i in range(40):
-        x0 = h2(i, 2, s + 19) * w
-        bottom = h - 1 if i % 3 else int(h * 0.74)
-        lean = (h2(i, 3, s + 23) - 0.5) * 1.6
-        ln = int(30 + 60 * h2(i, 4, s + 29))
-        for k in range(ln):
-            x = int(x0 + lean * k + 3.0 * math.sin(k / 9.0 + i))
-            y = bottom - k
-            d = 0.98 - 0.45 * (k / float(ln))
-            d *= 0.5 + 0.5 * calm(x, y, w, h)
-            for o in (0, 1):
-                if d > 0.09:
-                    put(near, x + o, y, gl(min(1.0, d), "walls"))
-            # thorns
-            if k % 7 == 3:
-                put(near, x + (2 if i % 2 else -2), y, "/" if i % 2 else "\\")
-    for i in range(260):
-        x = int(h2(i, 8, s + 31) * w)
-        y = int(h2(i, 9, s + 37) * h)
-        if calm(x, y, w, h) > 0.5:
-            put(near, x, y, "*+."[int(h2(i, 10, s + 41) * 3)])
-    return far, near, sparse(w, LIFE_H, s, "·.*+'", 300, 113)
-
-
-def scene_geode(w, h, s):
-    """Facets radiating from a light, crystal bands, a hot core."""
-    far, near = grid(w, h), grid(w, h)
-    cx, cy = 0.5 * w + 74, 0.30 * h
-    for y in range(h):
-        for x in range(w):
-            dx, dy = (x - cx) * 0.5, (y - cy)
-            th = math.atan2(dy, dx)
-            r = math.sqrt(dx * dx + dy * dy)
-            f = (th * 6.0 / math.pi + fbm(x / 50.0, y / 34.0, s) * 0.8) % 1.0
-            edge = 1.0 - abs(f - 0.5) * 2.0
-            d = (0.3 + 0.75 * edge) * (0.3 + 0.7 * min(1.0, r / 52.0))
-            d *= calm(x, y, w, h)
-            if d > 0.08:
-                far[y][x] = gl(min(1.0, d), "walls")
-    for i in range(40):
-        a = (i / 40.0) * math.pi * 2 + h2(i, 1, s + 3) * 0.3
-        ln = int(44 + 86 * h2(i, 2, s + 7))
-        for k in range(10, ln):
-            x = int(cx + math.cos(a) * k * 2.0)
-            y = int(cy + math.sin(a) * k)
-            d = 0.95 - 0.5 * (k / float(ln))
-            d *= 0.45 + 0.55 * calm(x, y, w, h)
-            if d > 0.1:
-                put(near, x, y, gl(min(1.0, d), "walls", True))
-                put(near, x + 1, y, gl(min(1.0, d * 0.82), "walls", True))
-    for y in range(h):
-        for x in range(w):
-            dx, dy = (x - cx) * 0.5, (y - cy)
-            r = math.sqrt(dx * dx + dy * dy)
-            if r < 17:
-                d = (1.0 - r / 17.0) ** 1.1
-                if d > 0.1:
-                    near[y][x] = gl(min(1.0, d), "walls", True)
-    return far, near, sparse(w, LIFE_H, s, "*+.'·", 340, 137)
-
-
-SCENES = {"sky": scene_sky, "water": scene_water, "cathedral": scene_cathedral,
-          "garden": scene_garden, "void": scene_void, "geode": scene_geode}
-
-
-def css_text(g):
-    """A character grid as a CSS content string ("\\A " plus one space per line)."""
-    out = []
-    for row in g:
-        line = "".join(row).rstrip()
-        out.append(line.replace("\\", "\\\\").replace('"', '\\"'))
-    return '"' + "\\A ".join(out) + '"'
-
-# --------------------------------------------------------------------------- #
-# colour                                                                      #
-# --------------------------------------------------------------------------- #
-
-
-def ramp(kind):
-    hue, ls, sm = ENV[kind]
-    out = []
-    for l in ls:
-        s = min(1.0, max(0.40, 0.58 * sm))
-        r, g, b = colorsys.hls_to_rgb(hue, l, s)
-        out.append("#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255)))
-    return out
-
-
-def glow_rot(kind):
-    """hue-rotate degrees that turn the sepia-saturated silhouette into the kind's hue."""
-    return round((ENV[kind][0] * 360.0) - 32.0) % 360
-
-# --------------------------------------------------------------------------- #
-# CSS                                                                         #
-# --------------------------------------------------------------------------- #
-
-# one 7x13 character cell: a couple of strokes and a dot, so a masked image
-# reads as rows of glyphs rather than as a dot screen
-MASK_TILE = ("url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
-             "width='7' height='13'%3E%3Cg fill='%23fff'%3E"
-             "%3Crect x='1' y='3' width='1' height='7'/%3E"
-             "%3Crect x='4' y='3' width='1' height='7'/%3E"
-             "%3Crect x='1' y='5' width='4' height='1'/%3E"
-             "%3Crect x='2' y='8' width='3' height='1'/%3E"
-             "%3Crect x='5' y='11' width='1' height='1'/%3E"
-             "%3C/g%3E%3C/svg%3E\")")
-
-GRAIN = ("url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
-         "width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence "
-         "type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E"
-         "%3Crect width='120' height='120' filter='url(%23n)' opacity='.5'/%3E"
-         "%3C/svg%3E\")")
-
-
-# --- textures (look 1): a halftone of small dots, and a stain with ring edges
-HALFTONE = ("url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
-            "width='5' height='5'%3E%3Cg fill='%23ffffff'%3E"
-            "%3Ccircle cx='1.4' cy='1.4' r='.95'/%3E"
-            "%3Ccircle cx='3.9' cy='3.9' r='.6'/%3E"
-            "%3C/g%3E%3C/svg%3E\")")
-
-STAIN = ("url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
-         "width='1100' height='760'%3E%3Cfilter id='w'%3E%3CfeTurbulence "
-         "type='fractalNoise' baseFrequency='.004' numOctaves='2' seed='9'/%3E"
-         "%3CfeDisplacementMap in='SourceGraphic' scale='64' xChannelSelector='R' "
-         "yChannelSelector='G'/%3E%3CfeGaussianBlur stdDeviation='2.5'/%3E%3C/filter%3E"
-         "%3Cg filter='url(%23w)' fill='none' stroke='%23ffffff'%3E"
-         "%3Cellipse cx='215' cy='150' rx='152' ry='112' stroke-width='9' opacity='.48'/%3E"
-         "%3Cellipse cx='215' cy='150' rx='120' ry='86' stroke-width='3' opacity='.32'/%3E"
-         "%3Cellipse cx='895' cy='635' rx='172' ry='122' stroke-width='10' opacity='.44'/%3E"
-         "%3Cellipse cx='895' cy='635' rx='141' ry='97' stroke-width='3' opacity='.28'/%3E"
-         "%3C/g%3E%3Cg filter='url(%23w)' fill='%23ffffff' opacity='.1'%3E"
-         "%3Cellipse cx='215' cy='150' rx='152' ry='112'/%3E"
-         "%3Cellipse cx='895' cy='635' rx='172' ry='122'/%3E"
-         "%3C/g%3E%3C/svg%3E\")")
-
 # --------------------------------------------------------------------------- #
 # the bar: ink levels, corner pips, and its generated rim and ground text      #
 # --------------------------------------------------------------------------- #
@@ -661,48 +320,127 @@ PIPS = ('%s{content:"";position:absolute;inset:-6px;'
         "background-position:left top,right top,left bottom,right bottom}")
 
 
-def bar_min(cell=14, cw=7.0):
-    """The narrowest the plate may be: the nav row in whole cells, plus the two
-    cells of inset on each side (one of them the rim)."""
-    labels = [s[0] for s in SLOTS] + (["GALLERY"] if USER_ID else [])
-    return int(math.ceil(len(" ".join(labels)) * cell + 4 * cw))
+# one 7x13 character cell: a couple of strokes and a dot, so a masked image
+# reads as rows of glyphs rather than as a dot screen. The no-sheet fallback
+# is the only thing left that wants it.
+MASK_TILE = ("url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
+             "width='7' height='13'%3E%3Cg fill='%23fff'%3E"
+             "%3Crect x='1' y='3' width='1' height='7'/%3E"
+             "%3Crect x='4' y='3' width='1' height='7'/%3E"
+             "%3Crect x='1' y='5' width='4' height='1'/%3E"
+             "%3Crect x='2' y='8' width='3' height='1'/%3E"
+             "%3Crect x='5' y='11' width='1' height='1'/%3E"
+             "%3C/g%3E%3C/svg%3E\")")
 
 
-def css_lines(lines):
-    """Lines as a CSS content string, with no space after the newline escape.
+def ramp(kind):
+    """The kind's four-stop ramp. Only the darkest stop is still used: it is
+    the scrim a neighbour stands behind so it sinks into the wall."""
+    hue, ls, sm = ENV[kind]
+    out = []
+    for l in ls:
+        s = min(1.0, max(0.40, 0.58 * sm))
+        r, g, b = colorsys.hls_to_rgb(hue, l, s)
+        out.append("#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255)))
+    return out
 
-    css_text() terminates its \\A with a space, which is harmless in a wide
-    scene but would push a one-cell-wide column of glyphs out of view.
+
+def _box(b, extra=""):
+    """One of the bar's own rectangles, in the plate's CSS pixels, scaled by
+    --bs so the same numbers serve the phone."""
+    return ("left:calc(%gpx * var(--bs));top:calc(%gpx * var(--bs));"
+            "width:calc(%gpx * var(--bs));height:calc(%gpx * var(--bs));%s"
+            % (b[0], b[1], b[2], b[3], extra))
+
+
+def bar_css(a, man):
+    """The bar is ONE PICTURE the renderer drew, with transparent links over
+    the words. Hovering a link shows a LIT COPY of the whole plate clipped to
+    that link's own rectangle, which is how the portfolio lights a label: the
+    word brightens and not one pixel moves.
     """
-    out = [l.rstrip().replace("\\", "\\\\").replace('"', '\\"') for l in lines]
-    return '"' + "\\00000a".join(out) + '"'
+    a(".bzk-bar{position:absolute;left:50%;bottom:var(--bbot);z-index:10;"
+      "width:calc(var(--bw0) * var(--bs));height:calc(var(--bh0) * var(--bs));"
+      "margin-left:calc(var(--bw0) * var(--bs) / -2)}")
+    a(".bzk-bp{position:absolute;inset:0;display:block;"
+      "background-size:100% 100%;background-repeat:no-repeat;opacity:0;"
+      "transition:opacity .9s linear .8s}")
+    a(".bzk-hit{position:absolute;inset:0}")
+    a(".bzk-hit a{position:absolute;display:block;text-decoration:none;outline:none}")
+    a(".bzk-hit a > i{position:absolute;inset:0;display:block;overflow:hidden}")
+    a('.bzk-hit a > i::before{content:"";position:absolute;display:block;'
+      "width:calc(var(--bw0) * var(--bs));height:calc(var(--bh0) * var(--bs));"
+      "background-image:var(--lit);background-size:100% 100%;"
+      "background-repeat:no-repeat;opacity:0;transition:opacity .12s linear}")
+    a(".bzk-hit a:hover > i::before,.bzk-hit a:active > i::before,"
+      ".bzk-hit a:focus-visible > i::before{opacity:1}")
+    a(PIPS % ".bzk-hit a:focus-visible::before")
+    a(".bzk-nav{display:contents}")
+    # the prev/next pair belongs to whichever pet is focused
+    a(".bzk-nav.bzk-fo{visibility:hidden}")
+
+    if not man:
+        return
+    for tag in ("L", "P"):
+        g = man["bar"][tag]
+        rules = []
+        for k, lab in enumerate(g["labels"], 1):
+            b = lab["box"]
+            rules.append(".bzk-hit .k%d{%s}" % (k, _box(b)))
+            rules.append(".bzk-hit .k%d > i::before{left:calc(%gpx * var(--bs));"
+                         "top:calc(%gpx * var(--bs))}" % (k, -b[0], -b[1]))
+        for c in g["index"]:
+            b = c["box"]
+            rules.append(".bzk-hit .x%d{%s}" % (c["i"] + 1, _box(b)))
+            rules.append(".bzk-hit .x%d > i::before{left:calc(%gpx * var(--bs));"
+                         "top:calc(%gpx * var(--bs))}" % (c["i"] + 1, -b[0], -b[1]))
+        for cls, b in (("bzk-pv", g["prev"]), ("bzk-nx", g["next"])):
+            if not b:
+                continue
+            rules.append(".bzk-hit .%s{%s}" % (cls, _box(b)))
+            rules.append(".bzk-hit .%s > i::before{left:calc(%gpx * var(--bs));"
+                         "top:calc(%gpx * var(--bs))}" % (cls, -b[0], -b[1]))
+        if tag == "L":
+            for r in rules:
+                a(r)
+        else:
+            # a finger needs 44 px whatever the plate says, so every target
+            # grows a taller strip of its own; the lit clip does not move
+            a("@media (max-width:620px){" + "".join(rules)
+              + '.bzk-hit a::after{content:"";position:absolute;left:0;right:0;'
+                "top:50%;height:44px;transform:translateY(-50%)}}")
 
 
-def rim_text(w, h, s):
-    """The rim: one cell of dense & @ % glyphs, as a row and as a column."""
-    row = "".join("&@%"[int(h2(x, 5, s) * 2.999)] for x in range(w))
-    col = ["&@%"[int(h2(7, y, s + 31) * 2.999)] for y in range(h)]
-    return row, col
+def plate_css(pets, man):
+    """Which captured plate each pet's wall and bar are, landscape and
+    portrait. Every URL here is relative to profile.css."""
+    if not man:
+        return ""
+    out = []
+    for tag, pre, post in (("L", "", ""),
+                           ("P", "@media (max-width:620px){", "}")):
+        L = []
+        for i, p in enumerate(pets, 1):
+            e = p.get("plate")
+            if not e:
+                continue
+            L.append(".bzk-wg.n%d > u{background-image:url(%s%s)}"
+                     % (i, PLATES, e["poster"][tag]["file"]))
+            for m, f in enumerate(e[tag], 1):
+                L.append(".bzk-wg.n%d > i:nth-of-type(%d){background-image:url(%s%s)}"
+                         % (i, m, PLATES, f["file"]))
+            L.append(".bzk-bp.n%d{background-image:url(%sb-%s-ink-%s.webp)}"
+                     % (i, PLATES, tag, p["key"]))
+            L.append(".bzk-pa:nth-of-type(%d):target ~ .bzk-stage"
+                     "{--lit:url(%sb-%s-lit-%s.webp)}" % (i, PLATES, tag, p["key"]))
+        if pets and pets[0].get("plate"):
+            L.append(".bzk-stage{--lit:url(%sb-%s-lit-%s.webp)}"
+                     % (PLATES, tag, pets[0]["key"]))
+        out.append(pre + "\n".join(L) + post)
+    return "\n".join(out) + "\n"
 
 
-def ground_text(w, h, s):
-    """A faint scatter of . : | - over the plate's ground."""
-    g = grid(w, h)
-    chars = ".:|-"
-    for i in range(int(w * h * 0.05)):
-        x = int(h2(i, 11, s) * w)
-        y = int(h2(i, 12, s + 3) * h)
-        put(g, x, y, chars[int(h2(i, 13, s + 5) * 3.999)])
-    return g
-
-
-_RROW, _RCOL = rim_text(200, 16, SEED + 77)
-RIMROW = css_lines([_RROW])
-RIMCOL = css_lines(_RCOL)
-SCATTER = css_lines("".join(r) for r in ground_text(180, 14, SEED + 131))
-
-
-def build_css(pets):
+def build_css(pets, man):
     n = len(pets)
     L = []
     a = L.append
@@ -732,11 +470,9 @@ def build_css(pets):
       "--glowOn:0 0 14px -4px var(--tint);"
       '--mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;'
       '--black:"UnifrakturCook","Pirata One",Georgia,serif;'
-      "--cw:7px;--ch:13px;--fs:11.667px;--cw2:14px;--ch2:26px;--fs2:23.334px;"
-      "--step:184px;--gap:36px;--nsz:140px;--cy:44%;"
-      "--rr:13px;--rt:26px;--rn:26px;--ri:26px;"
-      "--barw:min(1120px,max(44vw," + str(bar_min()) + "px));"
-      "--barh:calc(2 * var(--rr) + var(--rt) + var(--rn) + var(--ri));--blur:5.5px;"
+      "--focus:" + FOCUS + ";--gap:" + GAP + ";--step:" + STEP + ";--near:" + NEAR + ";"
+      "--cy:44%;--life:" + LIFE + ";"
+      "--bw0:847px;--bh0:130px;--bs:1;--bbot:30px;"
       "--rev-t:" + REVEAL + ";--sweep:" + SWEEP + ";--slide:" + SLIDE + ";--boot:" + BOOT_HOLD + ";"
       "font-family:var(--mono);font-size:13px;line-height:1.35;color:var(--text);"
       "-webkit-font-smoothing:antialiased;text-align:left}")
@@ -765,187 +501,56 @@ def build_css(pets):
     a(".bzk-stage{position:absolute;inset:0;overflow:hidden;visibility:visible !important;"
       "--lp:18%;--n:" + str(n) + "}")
 
-    # default kind/light come from the stage's own classes; any :target resets them
-    a(".bzk-pa:target ~ .bzk-stage{" + "".join(
-        "--v-%s:hidden;--cv-%s:hidden;--z-%s:1;--td-%s:1.6s;--an-%s:none;" % (k, k, k, k, k)
-        for k in KINDS) + "--lp:18%}")
+    # The kind classes carried the whole live scene machinery. One thing is
+    # left for them: --envdark, the darkest stop of the room's ramp, which is
+    # the scrim a neighbour stands behind so it sinks into the wall.
     for k in KINDS:
-        rot = glow_rot(k)
-        kc = ramp(k)
-        # --envc is the kind's brightest stop (the room's colour, used by the
-        # light leak, the edge glow and the pet's glow pool); --envdark is its
-        # darkest stop (the scrim that sinks a neighbour into the wall).
-        a(".bzk-stage.k-%s,.bzk-pa.k-%s:target ~ .bzk-stage{--v-%s:visible;--cv-%s:visible;"
-          "--z-%s:2;--td-%s:0s;--an-%s:bzk-sweep;--grot:%ddeg;--envc:%s;--envdark:%s}"
-          % (k, k, k, k, k, k, k, rot, kc[3], kc[0]))
-    a(".bzk-stage.l-right,.bzk-pa.l-right:target ~ .bzk-stage{--lp:82%}")
-
-    # ---- scene layers ------------------------------------------------------
-    a(".bzk-scenes{position:absolute;inset:0;z-index:1;overflow:hidden;"
-      "animation:bzk-settle 3s ease-out calc(var(--boot) + .45s) both}")
-    a("@keyframes bzk-settle{0%,17%{opacity:0}100%{opacity:1}}")
-    a(".bzk-sc{position:absolute;inset:0;overflow:hidden;"
-      "font-family:var(--mono);font-weight:400;font-size:var(--fs);line-height:var(--ch);"
-      "letter-spacing:0;white-space:pre;color:transparent;-webkit-text-fill-color:transparent;"
-      "--gx:calc(50% - " + str(SCENE_W // 2) + " * var(--cw));"
-      "--gy:calc(50% - " + str(SCENE_H // 2) + " * var(--ch));"
-      "animation-duration:var(--sweep);animation-timing-function:steps(28,end);"
-      "animation-fill-mode:both;transition-behavior:allow-discrete}")
-    a('.bzk-sc::before,.bzk-sc::after{position:absolute;left:var(--gx);top:var(--gy);'
-      "display:block;white-space:pre;-webkit-background-clip:text;background-clip:text}")
-    a(".bzk-sc::before{content:var(--far);left:calc(var(--gx) - 10 * var(--cw));"
-      "animation:bzk-drift 36s steps(20,end) infinite alternate;"
-      "-webkit-mask-image:linear-gradient(100deg,#000 0 var(--sw),transparent var(--sw));"
-      "mask-image:linear-gradient(100deg,#000 0 var(--sw),transparent var(--sw))}")
-    a(".bzk-sc::after{content:var(--near);"
-      "-webkit-mask-image:linear-gradient(100deg,#000 0 calc(var(--sw) - 6%),transparent calc(var(--sw) - 6%));"
-      "mask-image:linear-gradient(100deg,#000 0 calc(var(--sw) - 6%),transparent calc(var(--sw) - 6%))}")
-    a(".bzk-sc > i,.bzk-sc > u{position:absolute;left:var(--gx);top:var(--lt,8%);display:block;"
-      "white-space:pre;text-decoration:none;font-style:normal;"
-      "-webkit-mask-image:linear-gradient(100deg,#000 0 calc(var(--sw) - 3%),transparent calc(var(--sw) - 3%));"
-      "mask-image:linear-gradient(100deg,#000 0 calc(var(--sw) - 3%),transparent calc(var(--sw) - 3%))}")
-    a(".bzk-sc > i{animation:bzk-lifeA 5.4s steps(1,end) infinite}")
-    a(".bzk-sc > u{animation:bzk-lifeB 5.4s steps(1,end) infinite}")
-    a("@keyframes bzk-lifeA{0%,49.9%{opacity:1}50%,100%{opacity:0}}")
-    a("@keyframes bzk-lifeB{0%,49.9%{opacity:0}50%,100%{opacity:1}}")
-    a("@keyframes bzk-drift{from{left:calc(var(--gx) - 10 * var(--cw))}"
-      "to{left:calc(var(--gx) - 30 * var(--cw))}}")
-    a("@keyframes bzk-sweep{from{--sw:-8%}to{--sw:130%}}")
-    a('.bzk-sc > i::before,.bzk-sc > u::before{content:var(--life);display:block;white-space:pre;'
-      "-webkit-background-clip:text;background-clip:text}")
-
-    for k in KINDS:
-        c = ramp(k)
-        # the layer that just lost focus keeps its 1.6s delay, so it stays painted
-        # under the incoming sweep; the incoming one has --td:0s and appears at once.
-        # transition-behavior comes AFTER the shorthand: the shorthand resets it,
-        # and without allow-discrete content-visibility would flip immediately and
-        # the bare ground would flash between scenes.
-        a(".s-%s{visibility:var(--v-%s,hidden);content-visibility:var(--cv-%s,hidden);"
-          "z-index:var(--z-%s,1);--lt:%s;"
-          "transition:visibility 0s linear var(--td-%s,1.6s),"
-          "content-visibility 0s linear var(--td-%s,1.6s);"
-          "transition-behavior:allow-discrete;"
-          "animation-name:var(--an-%s,none)}" % (k, k, k, k, LIFE_TOP[k], k, k, k))
-        a(".s-" + k + "::before{background-image:radial-gradient(130% 96% at var(--lp) 26%,"
-          + c[2] + "," + c[2] + " 16%," + c[1] + " 54%," + c[0] + " 96%)}")
-        a(".s-" + k + "::after{background-image:radial-gradient(112% 82% at var(--lp) 22%,"
-          + c[3] + "," + c[3] + " 24%," + c[2] + " 56%," + c[1] + " 90%);"
-          "text-shadow:0 0 7px " + c[2] + "66}")
-        a(".s-" + k + " > i::before,.s-" + k + " > u::before{background-image:"
-          "linear-gradient(100deg," + c[3] + "," + c[2] + ");text-shadow:0 0 9px " + c[3] + "99}")
+        a(".bzk-stage.k-%s,.bzk-pa.k-%s:target ~ .bzk-stage{--envdark:%s}"
+          % (k, k, ramp(k)[0]))
 
     # ======================================================================= #
-    # REPLACEABLE SECTION: SCREEN EFFECTS                                     #
-    # Blur field, textures (look 1), side glow, vignette, scanline, grain.    #
-    # Markup: fx_html() (under the bar) and fx_top_html() (over it).          #
-    # Nothing outside this section depends on it.                             #
+    # THE WALL                                                               #
+    # One layer per pet, each holding the three moments captured from the    #
+    # renderer. Only opacity animates, on layers that are already their own  #
+    # compositor layers, so a frame of this costs no paint at all.           #
     # ======================================================================= #
-    # --- blur field: four stacked backdrop-filter bands, each masked so the
-    #     blur builds up gradually towards the edges. Band 1 is unmasked, so
-    #     there is always at least a slight blur on the room; the clear spot
-    #     over the focused pet keeps about a quarter of the full blur. Nothing
-    #     here has a hard edge: every mask stop is a wide gradient. The pets
-    #     paint above all of this, so pet art is never blurred.
-    hd = "min(85vmax,849px)"      # about the half-diagonal of a 1440x900 screen
-    a(".bzk-bl{position:absolute;inset:0;z-index:2;pointer-events:none;"
-      "-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;"
-      "-webkit-mask-composite:source-in;mask-composite:intersect}")
-    for i, (b, s0, s1, c0, c1) in enumerate(
-            ((1.4, None, None, None, None),     # the floor: always a little blur
-             (2.2, .00, .46, .07, .21),
-             (3.0, .22, .74, .07, .24),
-             (3.8, .46, 1.0, .07, .28)), 1):
-        css = (".bzk-bl.b" + str(i) + "{backdrop-filter:blur(calc(var(--blur) * "
-               + ("%.3f" % (b / 5.5)) + "));-webkit-backdrop-filter:blur(calc(var(--blur) * "
-               + ("%.3f" % (b / 5.5)) + "))")
-        if s0 is not None:
-            # the clear spot, in fractions of the half-diagonal, with a
-            # smoothstep-ish three-stop falloff
-            rad = ("radial-gradient(circle " + hd + " at 50% var(--cy),transparent "
-                   + ("%.1f" % (s0 * 100)) + "%,rgba(0,0,0,.25) "
-                   + ("%.1f" % ((s0 + (s1 - s0) * .45) * 100)) + "%,#000 "
-                   + ("%.1f" % (s1 * 100)) + "%)")
-            # the clearer strip down the middle
-            lin = ("linear-gradient(90deg,#000 0,#000 " + ("%.1f" % (50 - c1 * 100))
-                   + "%,transparent " + ("%.1f" % (50 - c0 * 100)) + "%,transparent "
-                   + ("%.1f" % (50 + c0 * 100)) + "%,#000 " + ("%.1f" % (50 + c1 * 100))
-                   + "%,#000 100%)")
-            css += (";-webkit-mask-image:" + rad + "," + lin
-                    + ";mask-image:" + rad + "," + lin)
-        a(css + "}")
-
-    # --- textures: look 1, generated, three at once, each kept faint
-    a(".bzk-tx{position:absolute;inset:0;z-index:4;pointer-events:none}")
-    # 1: light leak, in the room's own colour
-    a(".bzk-tx.t1{mix-blend-mode:screen;opacity:.24;"
-      "background:linear-gradient(118deg,transparent 0 46%,"
-      "color-mix(in srgb,var(--envc,#9fd8bd) 30%,transparent) 62%,"
-      "color-mix(in srgb,var(--envc,#9fd8bd) 8%,transparent) 76%,transparent 88%),"
-      "radial-gradient(70% 50% at 104% 8%,"
-      "color-mix(in srgb,var(--envc,#9fd8bd) 22%,transparent),transparent 72%);"
-      "animation:bzk-leak 42s ease-in-out infinite alternate}")
-    a("@keyframes bzk-leak{0%{opacity:.17}36%{opacity:.17}100%{opacity:.30}}")
-    # 2: halftone wash, small dots, held to the corners
-    a(".bzk-tx.t2{opacity:.16;mix-blend-mode:soft-light;background-image:" + HALFTONE + ";"
-      "background-size:5px 5px;"
-      "-webkit-mask-image:radial-gradient(118% 92% at 50% 50%,transparent 0 44%,#000 100%);"
-      "mask-image:radial-gradient(118% 92% at 50% 50%,transparent 0 44%,#000 100%)}")
-    # 3: stain with ring edges
-    a(".bzk-tx.t3{opacity:.20;mix-blend-mode:overlay;background-image:" + STAIN + ";"
-      "background-size:1100px 760px;background-position:center;background-repeat:no-repeat;"
-      "animation:bzk-stain 42s ease-in-out infinite alternate}")
-    a("@keyframes bzk-stain{0%{opacity:.13}36%{opacity:.13}100%{opacity:.26}}")
-
-    # --- scanline + grain, over the bar as well as the room
-    a(".bzk-scan{position:absolute;inset:0;z-index:5;pointer-events:none;"
-      "background:repeating-linear-gradient(0deg,rgba(0,0,0,.17) 0 1px,rgba(0,0,0,0) 1px 2px)}")
-    a('.bzk-scan::after{content:"";position:absolute;inset:0;opacity:.05;'
-      "background-image:" + GRAIN + ";background-size:120px 120px}")
-    # bloom is not a layer: only the bright ramp stops carry it, through the
-    # text-shadow on the near scene layer and on the life bands, so a dim cell
-    # never spills and nothing is hazed.
-
-    # --- side glow: hugs each edge, gaussian-ish over about a tenth of the
-    #     width, strongest at mid height, in the room's colour, held off the bar
-    a(".bzk-edge{position:absolute;left:0;top:0;bottom:0;width:10.5%;z-index:6;"
-      "pointer-events:none;mix-blend-mode:screen;"
-      "-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.2) 0,#000 46%,rgba(0,0,0,.2) 100%),"
-      "linear-gradient(0deg,transparent 0,transparent calc(var(--barh) - 6px),"
-      "#000 calc(var(--barh) + 42px));"
-      "mask-image:linear-gradient(180deg,rgba(0,0,0,.2) 0,#000 46%,rgba(0,0,0,.2) 100%),"
-      "linear-gradient(0deg,transparent 0,transparent calc(var(--barh) - 6px),"
-      "#000 calc(var(--barh) + 42px));"
-      "-webkit-mask-composite:source-in;mask-composite:intersect;"
-      "animation:bzk-breathe 23s ease-in-out infinite}")
-    a(".bzk-edge.e-l{background:linear-gradient(90deg,"
-      "color-mix(in srgb,var(--envc,#9fd8bd) 30%,transparent) 0,"
-      "color-mix(in srgb,var(--envc,#9fd8bd) 8%,transparent) 42%,transparent 100%)}")
-    a(".bzk-edge.e-r{left:auto;right:0;background:linear-gradient(270deg,"
-      "color-mix(in srgb,var(--envc,#9fd8bd) 33%,transparent) 0,"
-      "color-mix(in srgb,var(--envc,#9fd8bd) 9%,transparent) 42%,transparent 100%);"
-      "animation-delay:-11.5s}")
-    a("@keyframes bzk-breathe{0%,100%{opacity:.40}50%{opacity:.86}}")
-
-    # --- vignette, held off the bar
-    a(".bzk-vig{position:absolute;inset:0;z-index:7;pointer-events:none;"
-      "background:radial-gradient(125% 92% at 50% 46%,rgba(0,0,0,0) 34%,rgba(0,0,0,.52) 100%);"
-      "-webkit-mask-image:linear-gradient(0deg,transparent 0,"
-      "transparent calc(var(--barh) - 6px),#000 calc(var(--barh) + 42px));"
-      "mask-image:linear-gradient(0deg,transparent 0,"
-      "transparent calc(var(--barh) - 6px),#000 calc(var(--barh) + 42px))}")
-    # ===================== end REPLACEABLE: SCREEN EFFECTS ================= #
+    a(".bzk-wall{position:absolute;inset:0;z-index:1;overflow:hidden;"
+      "animation:bzk-settle 2.4s ease-out calc(var(--boot) + .45s) both}")
+    a("@keyframes bzk-settle{0%,14%{opacity:0}100%{opacity:1}}")
+    # A pet's wall. The one coming in takes --sweep; the one going out keeps
+    # this rule's own transition, which is slower AND delayed, so the two
+    # opacities always sum past 1 and the ground is never seen between them.
+    a(".bzk-wg{position:absolute;inset:0;opacity:0;"
+      "transition:opacity .9s linear .8s}")
+    # the poster: a quarter-size copy of the same wall, always loaded, so a
+    # jump straight across the index strip has something of the right room
+    # underneath the plate that is fading in
+    a(".bzk-wg > u{position:absolute;inset:0;display:block;z-index:0;"
+      "background-position:center;background-size:cover;background-repeat:no-repeat}")
+    # the three moments, 2.7 s apart - one turn of the life tick
+    a(".bzk-wg > i{position:absolute;inset:0;display:block;z-index:1;"
+      "background-position:center;background-size:cover;background-repeat:no-repeat;"
+      "will-change:opacity;animation:bzk-life var(--life) linear infinite both}")
+    a(".bzk-wg > i:nth-of-type(1){animation-delay:0s}")
+    a(".bzk-wg > i:nth-of-type(2){animation-delay:calc(-1 * var(--life) / 3)}")
+    a(".bzk-wg > i:nth-of-type(3){animation-delay:calc(-2 * var(--life) / 3)}")
+    # each moment holds for a third of the turn and hands over across a
+    # twelfth of it; the three always sum to one, so the wall never dips
+    a("@keyframes bzk-life{0%{opacity:1}25%{opacity:1}33.333%{opacity:0}"
+      "91.667%{opacity:0}100%{opacity:1}}")
 
     # ---- pets --------------------------------------------------------------
     a(".bzk-row{position:absolute;left:0;right:0;top:var(--cy);height:0;z-index:8}")
-    a(".bzk-pet{position:absolute;top:-100px;width:200px;height:200px;line-height:0;"
+    a(".bzk-pet{position:absolute;top:calc(-1 * var(--focus) / 2);"
+      "width:var(--focus);height:var(--focus);line-height:0;"
       "--s:calc(var(--i) - var(--f));--d:max(var(--s),calc(-1 * var(--s)));"
       "--on:clamp(0,calc(1 - var(--d)),1);--vis:clamp(0,calc(4 - var(--d)),1);"
       "--sg:clamp(-1,var(--s),1);"
       "--x:calc(var(--s) * var(--step) + var(--sg) * var(--gap));"
-      "--sz:calc((var(--nsz) + (200px - var(--nsz)) * var(--on)) * var(--vis));"
-      "--pad:calc((200px - var(--sz)) / 2);--shd:var(--slide);"
-      "left:calc(50% + var(--x) - 100px);opacity:var(--vis);"
+      "--sz:calc(var(--focus) * (var(--near) + (1 - var(--near)) * var(--on))"
+      " * var(--vis));"
+      "--pad:calc((var(--focus) - var(--sz)) / 2);--shd:var(--slide);"
+      "left:calc(50% + var(--x) - var(--focus) / 2);opacity:var(--vis);"
       "transition:left var(--slide) cubic-bezier(.3,.7,.2,1),opacity var(--slide) linear}")
     # the glow pool, the closed frame and the sheet are painted from CSS
     # backgrounds: their URLs then live in profile.css, where they are
@@ -957,13 +562,10 @@ def build_css(pets):
       "left var(--slide) cubic-bezier(.3,.7,.2,1),"
       "width var(--slide) cubic-bezier(.3,.7,.2,1),"
       "height var(--slide) cubic-bezier(.3,.7,.2,1),opacity .3s linear}")
-    # 1: a soft pool of the room's colour under the pet. It is larger than the
-    #    pet and blurred far past its edge, so it never reads as an outline.
-    a(".bzk-pet .bzk-aura{z-index:1;opacity:calc(.08 + .36 * var(--on));"
-      "top:calc(var(--pad) - 16px);left:calc(var(--pad) - 16px);"
-      "width:calc(var(--sz) + 32px);height:calc(var(--sz) + 32px);"
-      "filter:brightness(0) invert(1) sepia(1) saturate(5) "
-      "hue-rotate(var(--grot,200deg)) blur(24px)}")
+    # (1: there was a glow pool under the pet here. Billy: "there is a border
+    #     around my gun now that's weird?" - and the pet had a dark blob behind
+    #     it for the same reason. The room's own light on the pet's place is in
+    #     the plate now, where the renderer put it, with no edge anywhere.)
     # 2: the closed frame - the pet as coloured ASCII. It stays lit under the
     #    sheet, so a slow or missing sheet shows this, never a blank box.
     a(".bzk-pet .bzk-closed{z-index:2;opacity:1}")
@@ -1013,18 +615,8 @@ def build_css(pets):
       "left var(--slide) cubic-bezier(.3,.7,.2,1),"
       "width var(--slide) cubic-bezier(.3,.7,.2,1),"
       "height var(--slide) cubic-bezier(.3,.7,.2,1),opacity var(--slide) linear}")
-    # the numeral: bare on the wall, no plate, carved, and blurred into the
-    # wall as it leaves the centre
-    a(".bzk-pet b{position:absolute;left:-40px;right:-40px;"
-      "top:calc(var(--pad) - var(--sz) * .40);"
-      "font-family:var(--black);font-weight:700;font-size:calc(var(--sz) * .39);"
-      "line-height:1;text-align:center;color:#131c22;letter-spacing:.04em;"
-      "text-shadow:0 2px 0 color-mix(in srgb,var(--tint) 86%,transparent),"
-      "0 -1px 0 rgba(0,0,0,.95),2px 0 0 rgba(0,0,0,.9),-2px 0 0 rgba(0,0,0,.9),"
-      "0 5px 11px rgba(0,0,0,.9);"
-      "filter:blur(calc((1 - var(--on)) * 1.7px));"
-      "transition:top var(--slide) cubic-bezier(.3,.7,.2,1),"
-      "font-size var(--slide) cubic-bezier(.3,.7,.2,1),filter var(--slide) linear}")
+    # (the numeral over each pet is gone at Billy's word, 2026-11-25: the count
+    #  is in the bar and nowhere else.)
     # links: the focused pet's link leads to its page, a neighbour's focuses it
     a(".bzk-pet a{position:absolute;top:var(--pad);left:var(--pad);display:block;"
       "text-decoration:none;outline:none;z-index:6;"
@@ -1040,7 +632,6 @@ def build_css(pets):
         sel = ".bzk-row > div:nth-child(" + str(i) + ")"
         a(sel + "::after{-webkit-mask-image:url(" + p["img"] + ");mask-image:url("
           + p["img"] + ")}")
-        a(sel + " .bzk-aura{background-image:url(" + p["img"] + ")}")
         r = p.get("rev")
         if not r:
             a(sel + " .bzk-fake{background-image:url(" + p["img"] + ")}")
@@ -1068,7 +659,8 @@ def build_css(pets):
               "animation-iteration-count:" + str(c["rows"]) + ",1;animation-delay:0s,0s}")
 
     # ---- name line ---------------------------------------------------------
-    a(".bzk-names{position:absolute;left:0;right:0;top:calc(var(--cy) + 116px);"
+    a(".bzk-names{position:absolute;left:0;right:0;"
+      "top:calc(var(--cy) + var(--focus) / 2 + 18px);"
       "height:34px;z-index:9;text-align:center}")
     a(".bzk-nm{position:absolute;left:0;right:0;top:0;white-space:nowrap}")
     a(".bzk-nm b{font-family:var(--black);font-weight:700;font-size:27px;line-height:1.2;"
@@ -1085,7 +677,7 @@ def build_css(pets):
     a(".bzk-nm b{--at:calc(.26s + var(--k,0) * %.4fs)}" % (1.0 / TYPE_CPS))
 
     # ======================================================================= #
-    # REPLACEABLE SECTION: TERMINAL BAR                                       #
+    # REPLACEABLE SECTION: TERMINAL BAR (now one captured plate)              #
     # One flat plate at the foot of the room, on the 7x13 cell grid: a rim     #
     # row, the readout, the nav row, the index row, a rim row. No borders, no  #
     # boxes, no corner marks, no crest, no labels; dim is told apart by ink    #
@@ -1096,80 +688,7 @@ def build_css(pets):
     #   * class "bzk-fo nI" on the readout line and on the prev/next pair      #
     #   * class "bzk-ix nI" on the index cell (its <s> is lit through --on2)    #
     # ======================================================================= #
-    a(".bzk-bar{position:absolute;left:0;right:0;bottom:0;z-index:3;height:var(--barh);"
-      "display:flex;justify-content:center;pointer-events:none;filter:blur(1.2px)}")
-    a(".bzk-plate{position:relative;width:var(--barw);height:var(--barh);"
-      "pointer-events:auto;font-family:var(--mono);font-weight:400;"
-      "font-size:var(--fs2);line-height:var(--ch2);letter-spacing:0;"
-      "text-transform:uppercase;white-space:nowrap}")
-    # the ground: a very low wash, a touch lighter than the ink, lit from above
-    # and feathered about four cells into the room so the plate has no cut edge
-    a('.bzk-plate::before{content:"";position:absolute;inset:0;z-index:0;'
-      "background:linear-gradient(180deg," + ink(.042) + " 0," + ink(.012) + " 62%,"
-      + ink(.026) + " 100%);"
-      "-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 28px,"
-      "#000 calc(100% - 28px),transparent 100%),"
-      "linear-gradient(180deg,transparent 0,#000 26px,#000 100%);"
-      "mask-image:linear-gradient(90deg,transparent 0,#000 28px,"
-      "#000 calc(100% - 28px),transparent 100%),"
-      "linear-gradient(180deg,transparent 0,#000 26px,#000 100%);"
-      "-webkit-mask-composite:source-in;mask-composite:intersect}")
-    # the faint scatter on the ground
-    a(".bzk-plate::after{content:var(--scatter);position:absolute;z-index:1;"
-      "left:var(--cw);right:var(--cw);top:var(--rr);bottom:var(--rr);overflow:hidden;"
-      "white-space:pre;font-size:var(--fs);line-height:var(--ch);color:" + ink(.085) + ";"
-      "pointer-events:none}")
-    # the rim: one cell of & @ % glyphs, lit differently on each edge
-    a(".bzk-rim{position:absolute;z-index:1;overflow:hidden;white-space:pre;"
-      "font-size:var(--fs);line-height:var(--ch);pointer-events:none}")
-    a(".bzk-rim::before{content:var(--rim)}")
-    a(".bzk-rim.r-t{left:0;right:0;top:0;height:var(--rr);--rim:var(--rimrow);color:"
-      + ink(.400) + "}")
-    a(".bzk-rim.r-f{left:0;right:0;bottom:0;height:var(--rr);--rim:var(--rimrow);color:"
-      + ink(.170) + "}")
-    a(".bzk-rim.r-l{left:0;top:0;bottom:0;width:var(--cw);--rim:var(--rimcol);color:"
-      + ink(.255) + "}")
-    a(".bzk-rim.r-r{right:0;top:0;bottom:0;width:var(--cw);--rim:var(--rimcol);color:"
-      + ink(.255) + "}")
-    # the three content rows, inset two cells from the rim
-    a(".bzk-rw,.bzk-nv,.bzk-ixr{position:absolute;left:calc(2 * var(--cw));"
-      "right:calc(2 * var(--cw));z-index:2}")
-    a(".bzk-rw{top:var(--rr);height:var(--rt)}")
-    a(".bzk-nv{top:calc(var(--rr) + var(--rt));height:var(--rn);text-align:center}")
-    a(".bzk-ixr{top:calc(var(--rr) + var(--rt) + var(--rn));height:var(--ri)}")
-    # readout: the name on the left, the count on the right. The count gives
-    # way first, so the name is never clipped while there is room for it.
-    a(".bzk-ro{position:absolute;left:0;right:0;top:0;height:var(--rt);display:flex;"
-      "align-items:center;justify-content:space-between;gap:var(--cw2);overflow:hidden}")
-    a(".bzk-ro b{font-weight:400;flex:1 0 auto;color:" + ink(.96) + "}")
-    a(".bzk-ro em{font-style:normal;flex:0 1 auto;min-width:0;overflow:hidden;color:"
-      + ink(.44) + "}")
-    # nav row: plain words, separated by single spaces
-    a(".bzk-nv{color:" + ink(.62) + "}")
-    a(".bzk-slot{position:relative;display:inline-block;color:" + ink(.62) + ";"
-      "text-decoration:none;outline:none;line-height:var(--rn);height:var(--rn);"
-      "transition:color .14s linear}")
-    a(".bzk-slot:hover,.bzk-slot:active,.bzk-slot:focus-visible{color:" + ink(1.0) + "}")
-    a(PIPS % ".bzk-slot:focus-visible::after")
-    # index row: one block per pet, centred; < and > at the ends
-    a(".bzk-strip{position:absolute;left:0;right:0;top:0;height:var(--ri);display:flex;"
-      "align-items:center;justify-content:center}")
-    a(".bzk-ix{position:relative;display:inline-block;width:var(--cw2);text-align:center;"
-      "line-height:var(--ri);height:var(--ri);color:" + ink(.62) + ";"
-      "text-decoration:none;outline:none;transition:color .14s linear}")
-    a(".bzk-ix:hover{color:" + ink(1.0) + "}")
-    a(".bzk-ix s{position:absolute;left:0;right:0;top:0;text-decoration:none;color:"
-      + ink(1.0) + ";opacity:var(--on2,0)}")
-    a(PIPS % ".bzk-ix:focus-visible::after")
-    a(".bzk-navset{position:absolute;left:0;right:0;top:0;height:var(--ri)}")
-    a(".bzk-navset a{position:absolute;top:0;width:calc(2 * var(--cw2));height:var(--ri);"
-      "line-height:var(--ri);text-align:center;color:" + ink(.62) + ";"
-      "text-decoration:none;outline:none;transition:color .14s linear}")
-    a(".bzk-navset a:hover{color:" + ink(1.0) + "}")
-    a(".bzk-navset .bzk-pv{left:0}")
-    a(".bzk-navset .bzk-nx{right:0}")
-    a(PIPS % ".bzk-navset a:focus-visible::after")
-    a(".bzk-plate{--rimrow:" + RIMROW + ";--rimcol:" + RIMCOL + ";--scatter:" + SCATTER + "}")
+    bar_css(a, man)
     # ====================== end REPLACEABLE: TERMINAL BAR ================== #
 
     # ---- generic per-pet wiring (pre-written for MAXPETS) -------------------
@@ -1186,6 +705,24 @@ def build_css(pets):
     # the moment it loses focus
     a(".bzk-pet{--cln:bzk-cx,bzk-cy}")
     a(".bzk-stage .n1{visibility:visible;--run:bzk-type;--on2:1}")
+    # the wall, the bar plate and the lit copy of the bar, per pet. The one
+    # coming in uses --sweep; the one going out keeps .bzk-wg's own slower,
+    # delayed transition, so the two never both sit at half and let the
+    # ground through.
+    a(".bzk-stage .bzk-wg.n1,.bzk-stage .bzk-bp.n1"
+      "{opacity:1;transition:opacity var(--sweep) linear}")
+    for k in range(1, MAXPETS + 1):
+        a(".bzk-pa:nth-of-type(%d):target ~ .bzk-stage .bzk-wg.n%d,"
+          ".bzk-pa:nth-of-type(%d):target ~ .bzk-stage .bzk-bp.n%d"
+          "{opacity:1;transition:opacity var(--sweep) linear}" % (k, k, k, k))
+    # only the focused pet's wall and its two neighbours' are allowed to
+    # fetch their three full plates; everything else is left on its poster
+    a(".bzk-wg > i{display:none}")
+    a(".bzk-stage .bzk-wg:nth-child(-n+2) > i{display:block}")
+    for k in range(1, MAXPETS + 1):
+        a(",".join(".bzk-pa:nth-of-type(%d):target ~ .bzk-stage .bzk-wg:nth-child(%d) > i"
+                   % (k, j) for j in (k - 1, k, k + 1) if 1 <= j <= MAXPETS)
+          + "{display:block}")
     # the default pet opens once the boot screen has gone
     a(".bzk-stage .bzk-pet:nth-child(1){--shn:bzk-sx,bzk-sy;--hon:bzk-hand;--cln:none;"
       "--shd:calc(var(--boot) + .45s)}")
@@ -1207,58 +744,36 @@ def build_css(pets):
 
     # ---- phone -------------------------------------------------------------
     # single-size bar text, taller nav and index rows so every target is 44px
-    a("@media (max-width:560px){#my-overlay{--cw:5.5px;--ch:10px;--fs:9.1667px;"
-      "--cw2:7px;--ch2:16px;--fs2:11.667px;"
-      "--step:118px;--gap:36px;--nsz:96px;--cy:38%;--blur:3.3px;"
-      "--rr:10px;--rt:26px;--rn:44px;--ri:44px;"
-      "--barw:min(100vw - 8px," + str(bar_min(7, 5.5)) + "px)}"
-      ".bzk-names{top:calc(var(--cy) + 110px)}"
-      ".bzk-nm b{font-size:21px}.bzk-nm i{width:9px;height:15px}"
-      ".bzk-ix{width:calc(2 * var(--cw2))}"
-      ".bzk-navset a{width:calc(3 * var(--cw2))}}")
+    # The focused pet stays 200 px on a phone - the art is 200 px and must
+    # not be resampled - so the row loses the gap instead and the
+    # neighbours barely peek in from the edges.
+    a("@media (max-width:620px){#my-overlay{"
+      "--gap:124px;--step:74px;--near:.42;--cy:40%;--bbot:16px;"
+      "--bw0:399px;--bh0:130px;--bs:.88}"
+      ".bzk-nm b{font-size:21px}.bzk-nm i{width:9px;height:15px}}")
+    a("@media (max-width:374px){#my-overlay{--gap:104px;--step:64px;--bs:.78}}")
 
     # ---- reduced motion ----------------------------------------------------
     a("@media (prefers-reduced-motion:reduce){"
       "#my-overlay *,#my-overlay *::before,#my-overlay *::after{animation:none !important}"
-      "#my-overlay{--sw:130%}"
-      ".bzk-scenes{opacity:1}"
+      ".bzk-wall{opacity:1}"
+      ".bzk-wg > i:nth-of-type(1){opacity:1}"
+      ".bzk-wg > i:nth-of-type(2),.bzk-wg > i:nth-of-type(3){display:none}"
       "#bzk-boot{opacity:0;visibility:hidden}"
-      ".bzk-sc > u{opacity:0}"
-      ".bzk-sc::before{left:calc(-10 * var(--cw))}"
       ".bzk-pet{transition:opacity .3s linear,left 0s}"
       ".bzk-pet img,.bzk-pet > u{transition:opacity .3s linear,top 0s,left 0s,width 0s,height 0s}"
-      ".bzk-pet b{transition:none}.bzk-pet a{transition:none}"
+      ".bzk-pet a{transition:none}"
       ".bzk-pet::after{transition:none}"
       # no playback: the window never gets layout, so no sheet is even fetched
       ".bzk-pet .bzk-win{display:none !important}"
       ".bzk-pet .bzk-img{opacity:var(--on);animation:none}"
       ".bzk-pet .bzk-closed{opacity:calc(1 - var(--on))}"
-      ".bzk-sc{transition:none}}")
+      "}")
 
 
 
     return "\n".join(L) + "\n"
 
-
-def scene_css(pets):
-    """content strings for every kind that is actually used."""
-    used = []
-    for p in pets:
-        if p["kind"] not in used:
-            used.append(p["kind"])
-    out = []
-    for k in KINDS:
-        if k not in used:
-            continue
-        far, near, life = SCENES[k](SCENE_W, SCENE_H, SEED + KINDS.index(k) * 1013)
-        out.append(".s-%s{--far:%s;--near:%s}" % (k, css_text(far), css_text(near)))
-        out.append(".s-%s > i{--life:%s}" % (k, css_text(life[0])))
-        out.append(".s-%s > u{--life:%s}" % (k, css_text(life[1])))
-    return "\n".join(out) + "\n", used
-
-# --------------------------------------------------------------------------- #
-# HTML                                                                        #
-# --------------------------------------------------------------------------- #
 
 BOOT = ('<div id="bzk-boot" style="position:absolute;top:0;left:0;width:100%;height:100%;'
         'background:#05070a"><span class="bzk-bs" style="position:absolute;top:50%;left:0;'
@@ -1287,12 +802,10 @@ def num(i):
 
 
 def fx_html():
-    return ('<div class="bzk-bl b1"></div><div class="bzk-bl b2"></div>'
-            '<div class="bzk-bl b3"></div><div class="bzk-bl b4"></div>'
-            '<div class="bzk-tx t1"></div><div class="bzk-tx t2"></div>'
-            '<div class="bzk-tx t3"></div><div class="bzk-scan"></div>'
-            '<div class="bzk-edge e-l"></div><div class="bzk-edge e-r"></div>'
-            '<div class="bzk-vig"></div>')
+    """There are no screen-effect layers any more. The blur, the textures, the
+    scanline, the grain, the side glow, the bloom and the vignette are in the
+    plates, drawn by the renderer that invented them."""
+    return ""
 
 
 # ============================================================================ #
@@ -1308,32 +821,30 @@ def fx_html():
 # ============================================================================ #
 
 
-def bar_html(pets):
+def bar_html(pets, man):
+    """The bar is ONE PICTURE per pet, drawn by the renderer, with transparent
+    links laid over the words it drew. Nothing here is typeset by the browser.
+    """
     n = len(pets)
+    o = ['<div class="bzk-bar">']
+    for i in range(1, n + 1):
+        o.append('<u class="bzk-bp n%d"></u>' % i)
+    o.append('<div class="bzk-hit">')
     slots = list(SLOTS)
     if USER_ID:
         slots.append(("GALLERY", "%s/gallery/?u=%s" % (PREFIX, USER_ID)))
-    o = ['<div class="bzk-bar"><div class="bzk-plate">'
-         '<div class="bzk-rim r-t"></div><div class="bzk-rim r-f"></div>'
-         '<div class="bzk-rim r-l"></div><div class="bzk-rim r-r"></div>'
-         '<div class="bzk-rw">']
-    for i, p in enumerate(pets, 1):
-        o.append('<span class="bzk-ro bzk-fo n%d"><b>%s</b><em>%s/%s</em></span>'
-                 % (i, esc(p["name"]), num(i), num(n)))
-    o.append('</div><div class="bzk-nv">')
-    o.append(" ".join('<a class="bzk-slot" href="%s">%s</a>' % (href, label)
-                      for label, href in slots))
-    o.append('</div><div class="bzk-ixr"><div class="bzk-strip">')
+    for k, (label, href) in enumerate(slots, 1):
+        o.append('<a class="bzk-sl k%d" href="%s" title="%s"><i></i></a>'
+                 % (k, href, esc(label)))
     for i in range(1, n + 1):
-        o.append('<a class="bzk-ix n%d" href="#p%d">░<s>█</s></a>' % (i, i))
-    o.append("</div>")
+        o.append('<a class="bzk-ix x%d" href="#p%d"><i></i></a>' % (i, i))
     for i in range(1, n + 1):
         pv = n if i == 1 else i - 1
         nx = 1 if i == n else i + 1
-        o.append('<span class="bzk-navset bzk-fo n%d">'
-                 '<a class="bzk-pv" href="#p%d">&lt;</a>'
-                 '<a class="bzk-nx" href="#p%d">&gt;</a></span>' % (i, pv, nx))
-    o.append("</div></div></div>")
+        o.append('<span class="bzk-nav bzk-fo n%d">'
+                 '<a class="bzk-pv" href="#p%d"><i></i></a>'
+                 '<a class="bzk-nx" href="#p%d"><i></i></a></span>' % (i, pv, nx))
+    o.append("</div></div>")
     return "".join(o)
 
 
@@ -1350,7 +861,7 @@ def pet_html(i, p, base=""):
         cls += " bzk-nosheet"
     elif r.get("close"):
         cls += " bzk-hasclose"
-    o = ['<div class="%s"><b>%s</b><u class="bzk-aura"></u>' % (cls, num(i))]
+    o = ['<div class="%s">' % cls]
     if r:
         # the closed frame stays lit under the sheet, so a sheet that is slow
         # or missing shows the closed pet, never a blank box
@@ -1368,7 +879,7 @@ def pet_html(i, p, base=""):
     return "".join(o)
 
 
-def body(pets, used, base=""):
+def body(pets, man, base=""):
     """The paste body. `base` prefixes the reveal sheets (absolute for the paste,
     relative for the local preview); pet images are always absolute."""
     n = len(pets)
@@ -1379,11 +890,11 @@ def body(pets, used, base=""):
                  % (p["kind"], p["light"], i))
     o.append('<div class="bzk-stage k-%s l-%s" style="visibility:hidden">'
              % (pets[0]["kind"], pets[0]["light"]))
-    # scenes: one layer per kind in use
-    o.append('<div class="bzk-scenes">'
-             + "".join('<div class="bzk-sc s-%s"><i></i><u></u></div>' % k for k in used)
-             + "</div>")
-    o.append(fx_html())
+    # the wall: one group per pet, a poster and three captured moments
+    o.append('<div class="bzk-wall">')
+    for i, p in enumerate(pets, 1):
+        o.append('<div class="bzk-wg n%d"><u></u><i></i><i></i><i></i></div>' % i)
+    o.append("</div>")
     # pets
     o.append('<div class="bzk-row">')
     for i, p in enumerate(pets, 1):
@@ -1395,7 +906,7 @@ def body(pets, used, base=""):
         letters = "".join("<b>%s</b>" % esc(c) for c in p["name"][:MAX_NAME])
         o.append('<span class="bzk-nm bzk-fo n%d">%s<i></i></span>' % (i, letters))
     o.append("</div>")
-    o.append(bar_html(pets))
+    o.append(bar_html(pets, man))
     o.append("</div></div>")
     return "".join(o)
 
@@ -1550,28 +1061,41 @@ def main(argv=None):
     if not pets:
         sys.exit("pets.txt has no pets")
     attach_reveal(pets, warn)
+    man = read_plates(warn)
+    attach_plates(pets, man, warn)
     for w in warn:
         print("WARNING:", w)
 
-    css = build_css(pets)
-    scenes, used = scene_css(pets)
-    css = css + scenes
+    css = build_css(pets, man) + plate_css(pets, man)
 
     base = cdn_base()
-    paste = '<link rel="stylesheet" href="%s">\n%s\n' % (cdn_css(), body(pets, used, base))
+    paste = '<link rel="stylesheet" href="%s">\n%s\n' % (cdn_css(), body(pets, man, base))
 
     for name, text in (("profile.css", css), ("profile.html", paste),
-                       ("preview.html", preview(body(pets, used, "")))):
+                       ("preview.html", preview(body(pets, man, "")))):
         with open(os.path.join(HERE, name), "w", encoding="utf-8") as f:
             f.write(text)
 
     chars = len(paste)
     # what one more pet costs the paste: its own markup plus its anchor, name
     # line, readout line, index cell and prev/next pair
-    each = (len(body(pets, used, base))
-            - (len(body(pets[:-1], used, base)) if len(pets) > 1 else 0))
+    each = (len(body(pets, man, base))
+            - (len(body(pets[:-1], man, base)) if len(pets) > 1 else 0))
     art = len(pet_html(len(pets), pets[-1], base))
-    print("pets: %d  kinds in use: %s" % (len(pets), ", ".join(used)))
+    kinds = []
+    for p in pets:
+        if p["kind"] not in kinds:
+            kinds.append(p["kind"])
+    plbytes = 0
+    if man:
+        for p in pets:
+            e = p.get("plate") or {}
+            for tag in ("L", "P"):
+                plbytes += sum(x["bytes"] for x in e.get(tag, []))
+                plbytes += (e.get("poster", {}).get(tag) or {}).get("bytes", 0)
+    print("pets: %d  kinds in use: %s" % (len(pets), ", ".join(kinds)))
+    print("plates       : %.2f MB of wall, %s"
+          % (plbytes / 1e6, "bar from the manifest" if man else "NONE"))
     for i, p in enumerate(pets, 1):
         print("  %s  %-16s %-9s %-5s %-8s %s"
               % (num(i), p["name"], p["kind"], p["light"],
