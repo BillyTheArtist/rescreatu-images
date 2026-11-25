@@ -367,12 +367,31 @@ def ramp(kind):
     return out
 
 
-def _box(b, extra=""):
-    """One of the bar's own rectangles, in the plate's CSS pixels, scaled by
-    --bs so the same numbers serve the phone."""
-    return ("left:calc(%gpx * var(--bs));top:calc(%gpx * var(--bs));"
-            "width:calc(%gpx * var(--bs));height:calc(%gpx * var(--bs));%s"
-            % (b[0], b[1], b[2], b[3], extra))
+def _box(b, px, extra=""):
+    """One of the bar's own rectangles, AS A FRACTION OF THE BAR.
+
+    These numbers come off the plate, in the plate's own pixels, and the
+    plate is shown at whatever width the bar ends up: 847 on a desktop,
+    less than that in a narrow window, 399 or less on a phone. In pixels
+    they only ever lined up at the widths where the two happened to agree
+    - at 1024 the six index blocks ran to x=1139 on an 847-wide bar and the
+    `>` sat 150 px off the right of the screen, which is why the arrows did
+    not work. A percentage of the bar tracks the drawing at every width.
+    """
+    w, h = px
+    return ("left:%.4f%%;top:%.4f%%;width:%.4f%%;height:%.4f%%;%s"
+            % (100.0 * b[0] / w, 100.0 * b[1] / h,
+               100.0 * b[2] / w, 100.0 * b[3] / h, extra))
+
+
+def _clip(b, px):
+    """The lit copy of the WHOLE plate, inside one hit rectangle: as many
+    times the rectangle as the plate is, pulled back to the rectangle's own
+    corner. All in percentages of the rectangle, so it scales with it."""
+    w, h = px
+    return ("width:%.4f%%;height:%.4f%%;left:%.4f%%;top:%.4f%%"
+            % (100.0 * w / b[2], 100.0 * h / b[3],
+               -100.0 * b[0] / b[2], -100.0 * b[1] / b[3]))
 
 
 def bar_css(a, man):
@@ -381,17 +400,31 @@ def bar_css(a, man):
     that link's own rectangle, which is how the portfolio lights a label: the
     word brightens and not one pixel moves.
     """
+    # THE BAR NEVER OVERFLOWS THE WINDOW. It is drawn at its own size while
+    # there is room and scaled down by its own aspect when there is not, so
+    # at 1024, at 768 and on a 375 phone the whole plate is on screen and
+    # the links, which are percentages of it, come with it.
     a(".bzk-bar{position:absolute;left:50%;bottom:var(--bbot);z-index:10;"
-      "width:calc(var(--bw0) * var(--bs));height:calc(var(--bh0) * var(--bs));"
-      "margin-left:calc(var(--bw0) * var(--bs) / -2)}")
+      "width:min(calc(var(--bw0) * var(--bs)),calc(100vw - 2 * var(--bpad)));"
+      "aspect-ratio:var(--bar);height:auto;"
+      "transform:translateX(-50%)}")
     a(".bzk-bp{position:absolute;inset:0;display:block;"
       "background-size:100% 100%;background-repeat:no-repeat;opacity:0;"
       "transition:opacity .9s linear .8s}")
     a(".bzk-hit{position:absolute;inset:0}")
     a(".bzk-hit a{position:absolute;display:block;text-decoration:none;outline:none}")
     a(".bzk-hit a > i{position:absolute;inset:0;display:block;overflow:hidden}")
+    # THE LINK'S NAME, and nothing a sighted reader will ever meet. It
+    # cannot be a title attribute - the host's filter cuts the word `title`
+    # in half and leaves `tle="HATCHERY">` showing over the bar - and in the
+    # markup it would be a thousand characters of the paste at forty pets,
+    # so it is generated content on a spare pseudo-element: in the
+    # accessibility tree, at font-size 0 in no colour inside a box that
+    # clips, and costing the paste nothing. The word is the one the
+    # renderer drew into the plate; none of it is invented.
+    a(".bzk-hit a > i::after{content:var(--nm,\"\");position:absolute;"
+      "left:0;top:0;font-size:0;color:transparent;white-space:nowrap}")
     a('.bzk-hit a > i::before{content:"";position:absolute;display:block;'
-      "width:calc(var(--bw0) * var(--bs));height:calc(var(--bh0) * var(--bs));"
       "background-image:var(--lit);background-size:100% 100%;"
       "background-repeat:no-repeat;opacity:0;transition:opacity .12s linear}")
     a(".bzk-hit a:hover > i::before,.bzk-hit a:active > i::before,"
@@ -405,32 +438,41 @@ def bar_css(a, man):
         return
     for tag in ("L", "P"):
         g = man["bar"][tag]
+        px = g["px"]
         rules = []
+        # the bar's own shape and nominal width, from the plate it is
+        rules.append("#my-overlay{--bar:%g / %g;--bw0:%gpx;--bh0:%gpx}"
+                     % (px[0], px[1], px[0], px[1]))
         for k, lab in enumerate(g["labels"], 1):
             b = lab["box"]
-            rules.append(".bzk-hit .k%d{%s}" % (k, _box(b)))
-            rules.append(".bzk-hit .k%d > i::before{left:calc(%gpx * var(--bs));"
-                         "top:calc(%gpx * var(--bs))}" % (k, -b[0], -b[1]))
+            rules.append(".bzk-hit .k%d{%s;--nm:\"%s\"}"
+                         % (k, _box(b, px), lab["t"].replace('"', "")))
+            rules.append(".bzk-hit .k%d > i::before{%s}" % (k, _clip(b, px)))
         for c in g["index"]:
             b = c["box"]
-            rules.append(".bzk-hit .x%d{%s}" % (c["i"] + 1, _box(b)))
-            rules.append(".bzk-hit .x%d > i::before{left:calc(%gpx * var(--bs));"
-                         "top:calc(%gpx * var(--bs))}" % (c["i"] + 1, -b[0], -b[1]))
-        for cls, b in (("bzk-pv", g["prev"]), ("bzk-nx", g["next"])):
+            rules.append(".bzk-hit .x%d{%s;--nm:\"%d\"}"
+                         % (c["i"] + 1, _box(b, px), c["i"] + 1))
+            rules.append(".bzk-hit .x%d > i::before{%s}"
+                         % (c["i"] + 1, _clip(b, px)))
+        for cls, b, nm in (("bzk-pv", g["prev"], "Previous"),
+                           ("bzk-nx", g["next"], "Next")):
             if not b:
                 continue
-            rules.append(".bzk-hit .%s{%s}" % (cls, _box(b)))
-            rules.append(".bzk-hit .%s > i::before{left:calc(%gpx * var(--bs));"
-                         "top:calc(%gpx * var(--bs))}" % (cls, -b[0], -b[1]))
+            rules.append(".bzk-hit .%s{%s;--nm:\"%s\"}"
+                         % (cls, _box(b, px), nm))
+            rules.append(".bzk-hit .%s > i::before{%s}" % (cls, _clip(b, px)))
         if tag == "L":
             for r in rules:
                 a(r)
         else:
-            # a finger needs 44 px whatever the plate says, so every target
-            # grows a taller strip of its own; the lit clip does not move
-            a("@media (max-width:620px){" + "".join(rules)
-              + '.bzk-hit a::after{content:"";position:absolute;left:0;right:0;'
-                "top:50%;height:44px;transform:translateY(-50%)}}")
+            # THE 44 PX FINGER STRIP IS GONE. The portrait plate stacks its
+            # rows 26 plate pixels apart, which is about 22 on a 375 screen,
+            # so a 44 px strip on every link spanned two rows and the row
+            # drawn later took the tap: HATCHERY, INVENTORY and EXPLORE all
+            # opened SHOPS, MERCHANT and RANCHER instead. Measured with
+            # elementFromPoint on the plate's own layout. Each target is now
+            # exactly the word the renderer drew, and no two overlap.
+            a("@media (max-width:620px){" + "".join(rules) + "}")
 
 
 def plate_css(pets, man):
@@ -499,7 +541,7 @@ def fx_css(a, fx):
     g = fx.get("grain")
     if g:
         t = g["tile"]
-        a(".bzk-grain{position:absolute;inset:-%dpx;z-index:2;pointer-events:none;"
+        a(".bzk-grain{position:absolute;inset:-%dpx;z-index:3;pointer-events:none;"
           "background-image:url(%s%s);background-repeat:repeat;"
           "will-change:transform;animation:bzk-grain 1s steps(1,end) infinite}"
           % (t, FX, g["file"]))
@@ -531,9 +573,20 @@ def fx_css(a, fx):
         # 7 x 13. Within a band it is off by at most a seventh of a cell.
         a("#my-overlay{--mn:%d;--mdur:%gs;--msz:100%% calc(%d * 100%%)}"
           % (nf, m["dur_s"], nf))
-        a("@keyframes bzk-morph{"
-          "from{-webkit-mask-position:0 0%;mask-position:0 0%}"
-          "to{-webkit-mask-position:0 100%;mask-position:0 100%}}")
+        # ONE COPY OF THE KEYFRAMES PER PET, and the focused pet picks which.
+        # An animation only restarts when something about it changes, and the
+        # churning band is a single element that keeps its rule through a
+        # second move the same way - two presses of `<` ran the band once.
+        # Giving every pet its own name makes any change of pet a change of
+        # animation-name, so the band and the front replay every time. Forty
+        # copies of two short rules is seven kilobytes of a hosted file.
+        for k in range(1, MAXPETS + 1):
+            a("@keyframes bzk-m%d{"
+              "from{-webkit-mask-position:0 0%%;mask-position:0 0%%}"
+              "to{-webkit-mask-position:0 100%%;mask-position:0 100%%}}" % k)
+            a("@keyframes bzk-c%d{0%%,92%%{opacity:.34}100%%{opacity:0}}" % k)
+            a(".bzk-pa.f%d:target ~ .bzk-stage{--mk:bzk-m%d;--ck:bzk-c%d}"
+              % (k, k, k))
         # --wsweep 0: the incoming wall is WHOLE from the first frame and the
         # mask is the only thing uncovering it. Fading it in as well would
         # make everything behind the front half there. The bar plate keeps
@@ -555,7 +608,8 @@ def fx_css(a, fx):
                 # two under cover. Its ordinary fade starts at 0.8 s, which
                 # during a morph would thin the half of the screen the
                 # front has not reached yet and let the ground through.
-                r.append(".bzk-pa.d%s:target ~ .bzk-stage{--mrun:bzk-morph;"
+                r.append(".bzk-pa.d%s:target ~ .bzk-stage{--mrun:var(--mk);"
+                         "--crun:var(--ck);"
                          "--wsweep:0s;--odl:%gs;--owd:.15s;"
                          "--mf:url(%s%s);--mb:url(%s%s)}"
                          % (d, m["dur_s"], FX, b["front"][tag],
@@ -572,7 +626,7 @@ def fx_css(a, fx):
         c = fx.get("churn")
         if c:
             a(".bzk-cb{position:absolute;inset:0;"
-              "z-index:1;pointer-events:none;opacity:0;image-rendering:pixelated;"
+              "z-index:2;pointer-events:none;opacity:0;image-rendering:pixelated;"
               "overflow:hidden;"
               "-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;"
               "-webkit-mask-size:var(--msz);mask-size:var(--msz);"
@@ -580,9 +634,9 @@ def fx_css(a, fx):
               "-webkit-mask-position:0 0;mask-position:0 0}")
             a(".bzk-pa.da:target ~ .bzk-stage .bzk-cb,"
               ".bzk-pa.db:target ~ .bzk-stage .bzk-cb"
-              "{opacity:.34;animation:bzk-morph var(--mdur) "
-              "steps(var(--mn),jump-none) both,bzk-coff var(--mdur) linear both}")
-            a("@keyframes bzk-coff{0%,92%{opacity:.34}100%{opacity:0}}")
+              "{opacity:.34;animation:var(--mrun,none) var(--mdur) "
+              "steps(var(--mn),jump-none) both,"
+              "var(--crun,none) var(--mdur) linear both}")
             cw2, ch2 = c["px"]
             a(".bzk-cg{position:absolute;inset:-%dpx;display:block;"
               "background:var(--ink,#8fa);image-rendering:auto;"
@@ -632,9 +686,19 @@ def build_css(pets, man, fx=None):
       '--black:"UnifrakturCook","Pirata One",Georgia,serif;'
       "--focus:" + FOCUS + ";--gap:" + GAP + ";--step:" + STEP + ";--near:" + NEAR + ";"
       "--cy:44%;--life:" + LIFE + ";"
-      "--bw0:847px;--bh0:130px;--bs:1;--bbot:30px;"
+      # the bar's own drawn size, overwritten from the plate's manifest in
+      # bar_css: 847 was a guess and the plate is 1120 wide, so the drawing
+      # was being squashed to 0.756 of its width while its height was left
+      # alone. --bpad is the least gap it keeps from the window's edge.
+      "--bw0:847px;--bh0:130px;--bar:847 / 130;--bs:1;--bbot:30px;--bpad:16px;"
       "--rev-t:" + REVEAL + ";--sweep:" + SWEEP + ";--slide:" + SLIDE + ";--boot:" + BOOT_HOLD + ";"
-      "font-family:var(--mono);font-size:13px;line-height:1.35;color:var(--text);"
+      # NOTHING IN HERE RENDERS TEXT UNLESS IT ASKS TO. The host's own
+      # filter has been seen cutting an attribute in half and leaving the
+      # tail of it as a text node inside a link; at size zero and in no
+      # colour, a mangled paste can no longer draw anything. The two
+      # elements that do carry text - the boot label and the name's own
+      # letters - set their own size and colour below.
+      "font-family:var(--mono);font-size:0;line-height:1.35;color:transparent;"
       "-webkit-font-smoothing:antialiased;text-align:left}")
 
     # ---- boot screen (ported, verbatim values) -----------------------------
@@ -696,7 +760,13 @@ def build_css(pets, man, fx=None):
     # another half second (measured: the front reached the right edge of the
     # screen at 500 ms and the left at 900 ms of 1400). Anchored to the
     # window instead, the sweep is the window's, at every width.
-    a(".bzk-wg{position:absolute;inset:0;"
+    # THE ONE COMING IN HAS TO BE ON TOP. The groups sit in pet order, so
+    # going forward the new room is later in the markup and paints over the
+    # old one, and going BACKWARD it is earlier and the mask was uncovering
+    # it underneath a wall that was still whole - the morph did nothing all
+    # the way through and the room changed in one jump at the end. That was
+    # the "issue going backward".
+    a(".bzk-wg{position:absolute;inset:0;z-index:0;"
       "opacity:0;transition:opacity .9s linear .8s;image-rendering:pixelated;"
       "-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;"
       "-webkit-mask-size:var(--msz);mask-size:var(--msz);"
@@ -862,7 +932,17 @@ def build_css(pets, man, fx=None):
               + str(c["cols"]) + ",jump-none),steps(" + str(c["rows"]) + ",jump-none);"
               "animation-iteration-count:" + str(c["rows"]) + ",1;animation-delay:0s,0s}")
 
-    # ---- name line ---------------------------------------------------------
+    # ======================================================================= #
+    # REPLACEABLE SECTION: THE NAME                                           #
+    # Everything that draws the focused pet's name is in this block and in    #
+    # names_html(), and nothing else in the file refers to .bzk-names,        #
+    # .bzk-nm or bzk-type. A larger carved design can replace both without    #
+    # touching anything around them. What the rest of the build gives it:     #
+    #   * one element per pet carrying "bzk-fo nI" (hidden unless focused)    #
+    #   * --run, set to a name while focused and to none otherwise, so a      #
+    #     move restarts whatever the block plays                              #
+    #   * --focus, --cy for where the pet is, and --tint / --text for ink     #
+    # ======================================================================= #
     a(".bzk-names{position:absolute;left:0;right:0;"
       "top:calc(var(--cy) + var(--focus) / 2 + 18px);"
       "height:34px;z-index:9;text-align:center}")
@@ -879,6 +959,7 @@ def build_css(pets, man, fx=None):
     for i in range(1, MAX_NAME + 1):
         a(".bzk-nm b:nth-child(%d){--k:%d}" % (i, i - 1))
     a(".bzk-nm b{--at:calc(.26s + var(--k,0) * %.4fs)}" % (1.0 / TYPE_CPS))
+    # ========================= end REPLACEABLE: THE NAME =================== #
 
     # ======================================================================= #
     # REPLACEABLE SECTION: TERMINAL BAR (now one captured plate)              #
@@ -919,6 +1000,7 @@ def build_css(pets, man, fx=None):
     # coming in uses --sweep; the one going out keeps .bzk-wg's own slower,
     # delayed transition, so the two never both sit at half and let the
     # ground through.
+    a(".bzk-stage .bzk-wg.n1{z-index:1}")
     a(".bzk-stage .bzk-wg.n1,.bzk-stage .bzk-bp.n1"
       "{opacity:1;transition:opacity var(--sweep) linear}")
     # ...and the moment anything IS targeted, that standing rule has to let
@@ -928,7 +1010,8 @@ def build_css(pets, man, fx=None):
     # going out is still whole while the front crosses it; the focused rule
     # below is six classes to this one's four and takes it back.
     a(".bzk-pa:target ~ .bzk-stage .bzk-wg"
-      "{opacity:0;transition:opacity var(--owd,.9s) linear var(--odl,.8s)}")
+      "{opacity:0;z-index:0;"
+      "transition:opacity var(--owd,.9s) linear var(--odl,.8s)}")
     a(".bzk-pa:target ~ .bzk-stage .bzk-bp"
       "{opacity:0;transition:opacity var(--sweep) linear}")
     for k in range(1, MAXPETS + 1):
@@ -937,7 +1020,8 @@ def build_css(pets, man, fx=None):
         # index-strip jump - which has no direction to give - is the plain
         # cross-fade and nothing here changes for it.
         a(".bzk-pa.f%d:target ~ .bzk-stage .bzk-wg.n%d"
-          "{opacity:1;transition:opacity var(--wsweep,var(--sweep)) linear;"
+          "{opacity:1;z-index:1;"
+          "transition:opacity var(--wsweep,var(--sweep)) linear;"
           "-webkit-mask-image:var(--mf);mask-image:var(--mf);"
           "animation:var(--mrun,none) var(--mdur) steps(var(--mn),jump-none) both}"
           % (k, k))
@@ -994,6 +1078,14 @@ def build_css(pets, man, fx=None):
       "--bw0:399px;--bh0:130px;--bs:.88}"
       ".bzk-nm b{font-size:21px}.bzk-nm i{width:9px;height:15px}}")
     a("@media (max-width:374px){#my-overlay{--gap:104px;--step:64px;--bs:.78}}")
+    # BETWEEN THE PHONE AND A FULL DESKTOP the row keeps its desktop spacing
+    # and the outer neighbours hang off both edges. The clear wall each side
+    # of the focused pet is the point of the layout, so the gap and the step
+    # come in with the window and the centre pet stays 200.
+    a("@media (min-width:621px) and (max-width:1100px){"
+      "#my-overlay{--gap:150px;--step:104px;--near:.50}}")
+    a("@media (min-width:1101px) and (max-width:1320px){"
+      "#my-overlay{--gap:174px;--step:126px;--near:.54}}")
 
     # ---- reduced motion ----------------------------------------------------
     a("@media (prefers-reduced-motion:reduce){"
@@ -1072,6 +1164,19 @@ def fx_html():
 # ============================================================================ #
 
 
+def names_html(pets):
+    """REPLACEABLE: the focused pet's name. One span per pet, each letter in
+    its own <b> so the stylesheet can type them in one at a time, and a
+    caret after the last. Paired with the REPLACEABLE: THE NAME block in
+    build_css; nothing else in the build reads these classes."""
+    o = ['<div class="bzk-names">']
+    for i, p in enumerate(pets, 1):
+        letters = "".join("<b>%s</b>" % esc(c) for c in p["name"][:MAX_NAME])
+        o.append('<span class="bzk-nm bzk-fo n%d">%s<i></i></span>' % (i, letters))
+    o.append("</div>")
+    return "".join(o)
+
+
 def bar_html(pets, man):
     """The bar is ONE PICTURE per pet, drawn by the renderer, with transparent
     links laid over the words it drew. Nothing here is typeset by the browser.
@@ -1084,9 +1189,12 @@ def bar_html(pets, man):
     slots = list(SLOTS)
     if USER_ID:
         slots.append(("GALLERY", "%s/gallery/?u=%s" % (PREFIX, USER_ID)))
+    # The link's name is TEXT INSIDE IT, in a <b> the stylesheet clips away,
+    # never a title attribute: the host's filter cuts `title` in half and
+    # leaves `tle="HATCHERY">` showing over the bar. The word itself is the
+    # one the renderer drew into the plate, so nothing here is invented.
     for k, (label, href) in enumerate(slots, 1):
-        o.append('<a class="bzk-sl k%d" href="%s" title="%s"><i></i></a>'
-                 % (k, href, esc(label)))
+        o.append('<a class="bzk-sl k%d" href="%s"><i></i></a>' % (k, href))
     for i in range(1, n + 1):
         o.append('<a class="bzk-ix x%d" href="#p%d"><i></i></a>' % (i, i))
     for i in range(1, n + 1):
@@ -1095,7 +1203,8 @@ def bar_html(pets, man):
         # `<` is moving backward and `>` forward, wrapping at both ends
         o.append('<span class="bzk-nav bzk-fo n%d">'
                  '<a class="bzk-pv" href="#p%db"><i></i></a>'
-                 '<a class="bzk-nx" href="#p%da"><i></i></a></span>' % (i, pv, nx))
+                 '<a class="bzk-nx" href="#p%da"><i></i></a></span>'
+                 % (i, pv, nx))
     o.append("</div></div>")
     return "".join(o)
 
@@ -1168,12 +1277,7 @@ def body(pets, man, base=""):
     for i, p in enumerate(pets, 1):
         o.append(pet_html(i, p, base))
     o.append("</div>")
-    # name line
-    o.append('<div class="bzk-names">')
-    for i, p in enumerate(pets, 1):
-        letters = "".join("<b>%s</b>" % esc(c) for c in p["name"][:MAX_NAME])
-        o.append('<span class="bzk-nm bzk-fo n%d">%s<i></i></span>' % (i, letters))
-    o.append("</div>")
+    o.append(names_html(pets))
     o.append(bar_html(pets, man))
     o.append("</div></div>")
     return "".join(o)
@@ -1309,6 +1413,46 @@ def attach_reveal(pets, warn):
 # --------------------------------------------------------------------------- #
 
 
+# WHAT THE HOST HAS BEEN PROVEN TO KEEP. Anything outside these two lists
+# has either never been through the site's filter or has been through it and
+# come back mangled: `title` was cut inside the word, and the tail of it,
+# `tle="HATCHERY">`, was left showing as text over the bar. The build stops
+# rather than ship a paste that has to be tested on the live site again.
+OK_TAGS = ("link", "div", "span", "a", "b", "i", "u", "img")
+OK_ATTRS = ("class", "id", "href", "src", "alt", "style", "rel")
+# `rel` has only ever been seen on the stylesheet link
+ATTR_ON = {"rel": ("link",)}
+TAG_RE = re.compile(r"<\s*([a-zA-Z][-\w]*)([^>]*)>")
+ATTR_RE = re.compile(r"([a-zA-Z_:][-\w:.]*)\s*=")
+
+
+def check_paste(paste):
+    """Every tag and every attribute in the paste, against the allow-list."""
+    tags, attrs, bad = {}, {}, []
+    for m in TAG_RE.finditer(paste):
+        t = m.group(1).lower()
+        tags[t] = tags.get(t, 0) + 1
+        if t not in OK_TAGS:
+            bad.append("tag <%s>" % t)
+        for a in ATTR_RE.findall(m.group(2)):
+            a = a.lower()
+            attrs[a] = attrs.get(a, 0) + 1
+            if a not in OK_ATTRS:
+                bad.append("attribute %s= on <%s>" % (a, t))
+            elif a in ATTR_ON and t not in ATTR_ON[a]:
+                bad.append("attribute %s= on <%s>" % (a, t))
+    def show(d):
+        return ", ".join("%s x%d" % (k, v) for k, v in sorted(d.items()))
+    print("paste tags   : %s" % show(tags))
+    print("paste attrs  : %s" % show(attrs))
+    if bad:
+        seen, uniq = set(), []
+        for b in bad:
+            if b not in seen:
+                seen.add(b); uniq.append(b)
+        sys.exit("PASTE REJECTED, outside the allow-list: " + "; ".join(uniq))
+
+
 def main(argv=None):
     global REF
     argv = list(sys.argv[1:] if argv is None else argv)
@@ -1336,6 +1480,7 @@ def main(argv=None):
 
     base = cdn_base()
     paste = '<link rel="stylesheet" href="%s">\n%s\n' % (cdn_css(), body(pets, man, base))
+    check_paste(paste)
 
     for name, text in (("profile.css", css), ("profile.html", paste),
                        ("preview.html", preview(body(pets, man, "")))):

@@ -119,8 +119,8 @@
   "file": "grain.webp",
   "tile": 256,
   "cover": 0.16,
-  "alpha": 6,
-  "bytes": 6624,
+  "alpha": 3,
+  "bytes": 6628,
   "offsets": [
    [
     9,

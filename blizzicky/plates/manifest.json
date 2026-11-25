@@ -71,6 +71,12 @@
      ],
      "bytes": 16466
     }
+   },
+   "tint": {
+    "hue": 8.27,
+    "sat": 0.4,
+    "light": "#464343",
+    "dark": "#0f0e0e"
    }
   },
   "30-black-effect-undead": {
@@ -143,6 +149,12 @@
      ],
      "bytes": 8278
     }
+   },
+   "tint": {
+    "hue": 29.68,
+    "sat": 0.4,
+    "light": "#302d2b",
+    "dark": "#0e0b0c"
    }
   },
   "45-albino-effect-stardust": {
@@ -215,6 +227,12 @@
      ],
      "bytes": 18732
     }
+   },
+   "tint": {
+    "hue": 52.12,
+    "sat": 0.4,
+    "light": "#3e3e3d",
+    "dark": "#0f0e0e"
    }
   },
   "71-albino-effect-derp": {
@@ -287,6 +305,12 @@
      ],
      "bytes": 17336
     }
+   },
+   "tint": {
+    "hue": 78.87,
+    "sat": 0.4,
+    "light": "#484a45",
+    "dark": "#0f100d"
    }
   },
   "33-rainbow-effect-cosmic": {
@@ -359,6 +383,12 @@
      ],
      "bytes": 18250
     }
+   },
+   "tint": {
+    "hue": 63.8,
+    "sat": 0.4,
+    "light": "#3c3d36",
+    "dark": "#0f0e0d"
    }
   },
   "37-albino-effect-frostlight": {
@@ -431,6 +461,12 @@
      ],
      "bytes": 5988
     }
+   },
+   "tint": {
+    "hue": 195.68,
+    "sat": 0.4,
+    "light": "#282a2b",
+    "dark": "#0b0d0d"
    }
   }
  },
