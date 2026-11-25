@@ -137,6 +137,28 @@ def read_plates(warn):
         return None
 
 
+FX_DIR = os.environ.get("BZK_FX_DIR") or os.path.join(HERE, "fx")
+FX = "fx/"
+
+
+def read_fx(warn):
+    """The live layers' manifest: the grain tile and the jumps it takes, the
+    morph's cell grid and frame count, and the churn tile. Written by
+    bake-work/fx.py, which generates all three from the renderer's own
+    numbers. Without it the page still builds - it simply has no grain and
+    cross-fades between environments instead of morphing."""
+    path = os.path.join(FX_DIR, "manifest.json")
+    if not os.path.isfile(path):
+        warn.append("no fx/manifest.json - run bake-work/fx.py all")
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as exc:
+        warn.append("fx/manifest.json did not parse (%s)" % exc)
+        return None
+
+
 def attach_plates(pets, man, warn):
     for p in pets:
         p["plate"] = None
@@ -420,6 +442,12 @@ def plate_css(pets, man):
     for tag, pre, post in (("L", "", ""),
                            ("P", "@media (max-width:620px){", "}")):
         L = []
+        # the plate's size in CSS pixels, which is what the wall box is set
+        # to: the landscape plate was captured at device scale 1 and the
+        # portrait one on a phone's frame at device scale 2
+        css = (man.get("css") or {}).get(tag)
+        if css:
+            L.append("#my-overlay{--pw:%dpx;--ph:%dpx}" % (css[0], css[1]))
         for i, p in enumerate(pets, 1):
             e = p.get("plate")
             if not e:
@@ -431,16 +459,148 @@ def plate_css(pets, man):
                          % (i, m, PLATES, f["file"]))
             L.append(".bzk-bp.n%d{background-image:url(%sb-%s-ink-%s.webp)}"
                      % (i, PLATES, tag, p["key"]))
-            L.append(".bzk-pa:nth-of-type(%d):target ~ .bzk-stage"
+            L.append(".bzk-pa.f%d:target ~ .bzk-stage"
                      "{--lit:url(%sb-%s-lit-%s.webp)}" % (i, PLATES, tag, p["key"]))
         if pets and pets[0].get("plate"):
             L.append(".bzk-stage{--lit:url(%sb-%s-lit-%s.webp)}"
                      % (PLATES, tag, pets[0]["key"]))
         out.append(pre + "\n".join(L) + post)
+    # A WINDOW BIGGER THAN THE PLATE is the one case the plate has to be
+    # scaled for. The morph is unaffected: its mask is measured against the
+    # window, not the plate.
+    css = (man.get("css") or {}).get("L")
+    if css:
+        out.append("@media (min-width:%dpx),(min-height:%dpx){"
+                   ".bzk-wg > u,.bzk-wg > i{left:0;top:0;margin:0;"
+                   "width:100%%;height:100%%;background-size:cover}}"
+                   % (css[0] + 1, css[1] + 1))
     return "\n".join(out) + "\n"
 
 
-def build_css(pets, man):
+def fx_css(a, fx):
+    """The two layers that are alive: the grain, and the morph.
+
+    Nothing here is a picture of the room. The grain is a 256 px speck tile
+    and the morph is a one-pixel-per-glyph-cell mask; between them they are
+    about 150 kB, and both are played by the compositor.
+    """
+    if not fx:
+        return
+
+    # ---- THE GRAIN ---------------------------------------------------------
+    # His renderer redraws its grain every frame. Baked into a still it is
+    # the same amplitude and reads as half of it, which is most of why our
+    # wall looked clean beside his. So the grain is live: one tile, half its
+    # specks lighter and half darker (so the wall's own level does not
+    # move), laid over the wall on its own layer and JUMPED - by whole
+    # pixels, with transform, sixteen times a second. No repaint, no blend
+    # mode, no filter. The layer is oversized by the tile so a jump never
+    # pulls an edge into view.
+    g = fx.get("grain")
+    if g:
+        t = g["tile"]
+        a(".bzk-grain{position:absolute;inset:-%dpx;z-index:2;pointer-events:none;"
+          "background-image:url(%s%s);background-repeat:repeat;"
+          "will-change:transform;animation:bzk-grain 1s steps(1,end) infinite}"
+          % (t, FX, g["file"]))
+        n = len(g["offsets"])
+        a("@keyframes bzk-grain{"
+          + "".join("%.4g%%{transform:translate3d(%dpx,%dpx,0)}"
+                    % (100.0 * i / n, -o[0], -o[1])
+                    for i, o in enumerate(g["offsets"])) + "}")
+
+    # ---- THE MORPH ---------------------------------------------------------
+    # One environment giving way to the next, as a MASK over the incoming
+    # wall: one pixel per glyph cell, generated from the glyph pass's own
+    # arrival formula (bake-work/fx.py), blown up with image-rendering
+    # pixelated so the front is ragged on exact cell boundaries, and
+    # stepped. The outgoing wall is whole underneath the whole time.
+    m = fx.get("morph")
+    if m:
+        nf = m["frames"]
+        # THE SHEET IS STRETCHED OVER THE WINDOW, one frame to a windowful,
+        # so the sweep is the window's whatever its size, and one frame is
+        # exactly 100% of the height. That makes the stepping free: a
+        # mask-position percentage is measured against (box - image), which
+        # here is -(n - 1) windowfuls, so 0% is the first frame and 100% the
+        # last, and steps(n, jump-none) lands on every one between.
+        #
+        # The price is that a mask cell is the window's width over the
+        # sheet's columns rather than a flat 7 px, so the sheet comes in
+        # three sizes and the width picks the one whose cell lands nearest
+        # 7 x 13. Within a band it is off by at most a seventh of a cell.
+        a("#my-overlay{--mn:%d;--mdur:%gs;--msz:100%% calc(%d * 100%%)}"
+          % (nf, m["dur_s"], nf))
+        a("@keyframes bzk-morph{"
+          "from{-webkit-mask-position:0 0%;mask-position:0 0%}"
+          "to{-webkit-mask-position:0 100%;mask-position:0 100%}}")
+        # --wsweep 0: the incoming wall is WHOLE from the first frame and the
+        # mask is the only thing uncovering it. Fading it in as well would
+        # make everything behind the front half there. The bar plate keeps
+        # its own cross-fade - it is not part of the room.
+        bands = m["bands"]
+        for bi, b in enumerate(bands):
+            pre, post = "", ""
+            q = []
+            if b.get("min"):
+                q.append("(min-width:%dpx)" % b["min"])
+            if b.get("max"):
+                q.append("(max-width:%dpx)" % b["max"])
+            if q:
+                pre, post = "@media " + " and ".join(q) + "{", "}"
+            r = []
+            for d, tag in (("a", "f"), ("b", "b")):
+                # --odl/--owd: the place being LEFT holds at full until the
+                # front has covered the last of it, then goes in a frame or
+                # two under cover. Its ordinary fade starts at 0.8 s, which
+                # during a morph would thin the half of the screen the
+                # front has not reached yet and let the ground through.
+                r.append(".bzk-pa.d%s:target ~ .bzk-stage{--mrun:bzk-morph;"
+                         "--wsweep:0s;--odl:%gs;--owd:.15s;"
+                         "--mf:url(%s%s);--mb:url(%s%s)}"
+                         % (d, m["dur_s"], FX, b["front"][tag],
+                            FX, b["band"][tag]))
+            a(pre + "".join(r) + post)
+
+        # ---- the crossing cells' own lettering ----------------------------
+        # A band of churning characters rides the front, in the INCOMING
+        # place's ink. Two masks, on two elements rather than one composite,
+        # because they step at different rates: the band at the morph's 24
+        # frames over 1.4 s, the lettering on the renderer's own 0.085 s
+        # churn tick. The tile is jumped by WHOLE CELLS, so every cell on
+        # the screen is handed a different character and nothing slides.
+        c = fx.get("churn")
+        if c:
+            a(".bzk-cb{position:absolute;inset:0;"
+              "z-index:1;pointer-events:none;opacity:0;image-rendering:pixelated;"
+              "overflow:hidden;"
+              "-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;"
+              "-webkit-mask-size:var(--msz);mask-size:var(--msz);"
+              "-webkit-mask-image:var(--mb);mask-image:var(--mb);"
+              "-webkit-mask-position:0 0;mask-position:0 0}")
+            a(".bzk-pa.da:target ~ .bzk-stage .bzk-cb,"
+              ".bzk-pa.db:target ~ .bzk-stage .bzk-cb"
+              "{opacity:.34;animation:bzk-morph var(--mdur) "
+              "steps(var(--mn),jump-none) both,bzk-coff var(--mdur) linear both}")
+            a("@keyframes bzk-coff{0%,92%{opacity:.34}100%{opacity:0}}")
+            cw2, ch2 = c["px"]
+            a(".bzk-cg{position:absolute;inset:-%dpx;display:block;"
+              "background:var(--ink,#8fa);image-rendering:auto;"
+              "-webkit-mask-image:url(%s%s);mask-image:url(%s%s);"
+              "-webkit-mask-size:%dpx %dpx;mask-size:%dpx %dpx;"
+              "-webkit-mask-repeat:repeat;mask-repeat:repeat;"
+              "will-change:transform;"
+              "animation:bzk-churn %gs steps(1,end) infinite}"
+              % (max(cw2, ch2), FX, c["file"], FX, c["file"],
+                 cw2, ch2, cw2, ch2, c["ticks"] * c["tick_s"]))
+            j = c["jumps"]
+            a("@keyframes bzk-churn{"
+              + "".join("%.4g%%{transform:translate3d(%dpx,%dpx,0)}"
+                        % (100.0 * i / len(j), -o[0], -o[1])
+                        for i, o in enumerate(j)) + "}")
+
+
+def build_css(pets, man, fx=None):
     n = len(pets)
     L = []
     a = L.append
@@ -504,9 +664,9 @@ def build_css(pets, man):
     # The kind classes carried the whole live scene machinery. One thing is
     # left for them: --envdark, the darkest stop of the room's ramp, which is
     # the scrim a neighbour stands behind so it sinks into the wall.
-    for k in KINDS:
-        a(".bzk-stage.k-%s,.bzk-pa.k-%s:target ~ .bzk-stage{--envdark:%s}"
-          % (k, k, ramp(k)[0]))
+    a(".bzk-stage.k-%s{--envdark:%s}" % (pets[0]["kind"], ramp(pets[0]["kind"])[0]))
+    for i, p in enumerate(pets, 1):
+        a(".bzk-pa.f%d:target ~ .bzk-stage{--envdark:%s}" % (i, ramp(p["kind"])[0]))
 
     # ======================================================================= #
     # THE WALL                                                               #
@@ -517,19 +677,48 @@ def build_css(pets, man):
     a(".bzk-wall{position:absolute;inset:0;z-index:1;overflow:hidden;"
       "animation:bzk-settle 2.4s ease-out calc(var(--boot) + .45s) both}")
     a("@keyframes bzk-settle{0%,14%{opacity:0}100%{opacity:1}}")
-    # A pet's wall. The one coming in takes --sweep; the one going out keeps
-    # this rule's own transition, which is slower AND delayed, so the two
-    # opacities always sum past 1 and the ground is never seen between them.
-    a(".bzk-wg{position:absolute;inset:0;opacity:0;"
-      "transition:opacity .9s linear .8s}")
+    # A PET'S WALL IS A BOX OF THE PLATE'S OWN SIZE, centred, and the wall
+    # above crops it: ONE CSS PIXEL TO ONE CAPTURED PIXEL, so the glyph cell
+    # on the page is the 7 x 13 the renderer drew and nothing is resampled.
+    # Billy's screen is 2543 CSS px wide; a 1920 plate under `cover` was
+    # blown up 1.32x there, which is what took the fine texture out of it.
+    # --pw and --ph are the capture's own size, from its manifest.
+    #
+    # The one coming in takes --sweep; the one going out keeps this rule's
+    # own transition, which is slower AND delayed, so the two opacities
+    # always sum past 1 and the ground is never seen between them. The mask
+    # properties are inert until a morph sets --mf (see THE MORPH below).
+    # THE GROUP IS THE WINDOW and the plate inside it is the oversized thing
+    # being cropped. It was the other way round until the morph went in, and
+    # that was wrong: the mask has to span WHAT IS SEEN. A 2560 plate on a
+    # 1440 screen is 56% visible, so a front sweeping the plate spent half a
+    # second off the right edge, crossed in 450 ms and then sat still for
+    # another half second (measured: the front reached the right edge of the
+    # screen at 500 ms and the left at 900 ms of 1400). Anchored to the
+    # window instead, the sweep is the window's, at every width.
+    a(".bzk-wg{position:absolute;inset:0;"
+      "opacity:0;transition:opacity .9s linear .8s;image-rendering:pixelated;"
+      "-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;"
+      "-webkit-mask-size:var(--msz);mask-size:var(--msz);"
+      "-webkit-mask-position:0 0;mask-position:0 0}")
+    # the plate itself: the capture's own size, centred, ONE CSS PIXEL TO ONE
+    # CAPTURED PIXEL
+    a(".bzk-wg > u,.bzk-wg > i{left:50%;top:50%;"
+      "width:var(--pw);height:var(--ph);"
+      "margin-left:calc(var(--pw) / -2);margin-top:calc(var(--ph) / -2)}")
     # the poster: a quarter-size copy of the same wall, always loaded, so a
     # jump straight across the index strip has something of the right room
-    # underneath the plate that is fading in
-    a(".bzk-wg > u{position:absolute;inset:0;display:block;z-index:0;"
-      "background-position:center;background-size:cover;background-repeat:no-repeat}")
-    # the three moments, 2.7 s apart - one turn of the life tick
-    a(".bzk-wg > i{position:absolute;inset:0;display:block;z-index:1;"
-      "background-position:center;background-size:cover;background-repeat:no-repeat;"
+    # underneath the plate that is fading in.
+    # image-rendering INHERITS, and the mask above is the only thing here
+    # that wants nearest neighbour - the plate itself never does.
+    a(".bzk-wg > u{position:absolute;display:block;z-index:0;"
+      "background-position:center;background-size:100% 100%;"
+      "background-repeat:no-repeat;image-rendering:auto}")
+    # the three moments, fourteen seconds apart - far enough for the texture
+    # schedule to have swapped one of its three layers, so the wall drifts
+    a(".bzk-wg > i{position:absolute;display:block;z-index:1;"
+      "background-position:center;background-size:100% 100%;"
+      "background-repeat:no-repeat;image-rendering:auto;"
       "will-change:opacity;animation:bzk-life var(--life) linear infinite both}")
     a(".bzk-wg > i:nth-of-type(1){animation-delay:0s}")
     a(".bzk-wg > i:nth-of-type(2){animation-delay:calc(-1 * var(--life) / 3)}")
@@ -538,13 +727,18 @@ def build_css(pets, man):
     # twelfth of it; the three always sum to one, so the wall never dips
     a("@keyframes bzk-life{0%{opacity:1}25%{opacity:1}33.333%{opacity:0}"
       "91.667%{opacity:0}100%{opacity:1}}")
+    fx_css(a, fx)
 
     # ---- pets --------------------------------------------------------------
     a(".bzk-row{position:absolute;left:0;right:0;top:var(--cy);height:0;z-index:8}")
     a(".bzk-pet{position:absolute;top:calc(-1 * var(--focus) / 2);"
       "width:var(--focus);height:var(--focus);line-height:0;"
       "--s:calc(var(--i) - var(--f));--d:max(var(--s),calc(-1 * var(--s)));"
-      "--on:clamp(0,calc(1 - var(--d)),1);--vis:clamp(0,calc(4 - var(--d)),1);"
+      # --vis: the first neighbour either side is whole, the second is a
+      # little over half there, and the third is gone. Four neighbours in a
+      # line all at full strength read as a contact sheet; the row has to
+      # fall away from the one in the middle.
+      "--on:clamp(0,calc(1 - var(--d)),1);--vis:clamp(0,calc(2.6 - var(--d)),1);"
       "--sg:clamp(-1,var(--s),1);"
       "--x:calc(var(--s) * var(--step) + var(--sg) * var(--gap));"
       "--sz:calc(var(--focus) * (var(--near) + (1 - var(--near)) * var(--on))"
@@ -621,8 +815,18 @@ def build_css(pets, man):
     a(".bzk-pet a{position:absolute;top:var(--pad);left:var(--pad);display:block;"
       "text-decoration:none;outline:none;z-index:6;"
       "transition:top var(--slide) linear,left var(--slide) linear}")
-    a(".bzk-pet .bzk-sel{width:calc(var(--sz) * var(--vis));"
-      "height:calc(var(--sz) * var(--vis))}")
+    # A NEIGHBOUR HAS TWO SELECT LINKS, one on top of the other, and only
+    # one of them has any size: the one that matches the side this pet is
+    # on. Clicking the pet to the right of the middle is moving FORWARD, so
+    # it leads to that pet's `a` anchor and the morph sweeps the way the
+    # reel did; the pet to the left leads to its `b` anchor. This is the
+    # only way the stylesheet can know a direction, since :target says
+    # where you are going and never where you came from.
+    a(".bzk-pet{--fwd:clamp(0,var(--s),1);--bwd:clamp(0,calc(-1 * var(--s)),1)}")
+    a(".bzk-pet .bzk-sf{width:calc(var(--sz) * var(--vis) * var(--fwd));"
+      "height:calc(var(--sz) * var(--vis) * var(--fwd))}")
+    a(".bzk-pet .bzk-sb{width:calc(var(--sz) * var(--vis) * var(--bwd));"
+      "height:calc(var(--sz) * var(--vis) * var(--bwd))}")
     a(".bzk-pet .bzk-go{z-index:7;width:calc(var(--sz) * var(--on));"
       "height:calc(var(--sz) * var(--on));cursor:pointer}")
     a(PIPS % ".bzk-pet a:focus-visible::after")
@@ -692,9 +896,15 @@ def build_css(pets, man):
     # ====================== end REPLACEABLE: TERMINAL BAR ================== #
 
     # ---- generic per-pet wiring (pre-written for MAXPETS) -------------------
+    # EVERY FOCUS ANCHOR CARRIES ITS OWN fN CLASS rather than being told
+    # apart by :nth-of-type, because a pet now has three of them: #pN,
+    # #pNa and #pNb. All three mean "pet N focused"; the a and b suffixes
+    # say which way the reel moved to get here, which is the one thing the
+    # stylesheet cannot work out for itself, and all they change is the
+    # direction the morph's front sweeps.
     a(".bzk-stage{--f:1}")
     for k in range(1, MAXPETS + 1):
-        a(".bzk-pa:nth-of-type(%d):target ~ .bzk-stage{--f:%d}" % (k, k))
+        a(".bzk-pa.f%d:target ~ .bzk-stage{--f:%d}" % (k, k))
     for k in range(1, MAXPETS + 1):
         a(".bzk-pet:nth-child(%d){--i:%d}" % (k, k))
     # focus groups: hidden by default, pet 1 shown, any :target resets then one wins
@@ -711,36 +921,68 @@ def build_css(pets, man):
     # ground through.
     a(".bzk-stage .bzk-wg.n1,.bzk-stage .bzk-bp.n1"
       "{opacity:1;transition:opacity var(--sweep) linear}")
+    # ...and the moment anything IS targeted, that standing rule has to let
+    # go, or the first pet's room is painted under every other pet's and the
+    # morph uncovers the new place over SKY instead of over the place being
+    # left. Reset every wall here, with the slow delayed fade, so the one
+    # going out is still whole while the front crosses it; the focused rule
+    # below is six classes to this one's four and takes it back.
+    a(".bzk-pa:target ~ .bzk-stage .bzk-wg"
+      "{opacity:0;transition:opacity var(--owd,.9s) linear var(--odl,.8s)}")
+    a(".bzk-pa:target ~ .bzk-stage .bzk-bp"
+      "{opacity:0;transition:opacity var(--sweep) linear}")
     for k in range(1, MAXPETS + 1):
-        a(".bzk-pa:nth-of-type(%d):target ~ .bzk-stage .bzk-wg.n%d,"
-          ".bzk-pa:nth-of-type(%d):target ~ .bzk-stage .bzk-bp.n%d"
-          "{opacity:1;transition:opacity var(--sweep) linear}" % (k, k, k, k))
-    # only the focused pet's wall and its two neighbours' are allowed to
-    # fetch their three full plates; everything else is left on its poster
+        # The wall that is coming in is also the one the morph's mask runs
+        # on. --mrun is `none` unless the anchor said a direction, so an
+        # index-strip jump - which has no direction to give - is the plain
+        # cross-fade and nothing here changes for it.
+        a(".bzk-pa.f%d:target ~ .bzk-stage .bzk-wg.n%d"
+          "{opacity:1;transition:opacity var(--wsweep,var(--sweep)) linear;"
+          "-webkit-mask-image:var(--mf);mask-image:var(--mf);"
+          "animation:var(--mrun,none) var(--mdur) steps(var(--mn),jump-none) both}"
+          % (k, k))
+        a(".bzk-pa.f%d:target ~ .bzk-stage .bzk-bp.n%d"
+          "{opacity:1;transition:opacity var(--sweep) linear}" % (k, k))
+    # ONLY THE FOCUSED PET'S WALL loads its three full plates. At 2560x1600
+    # a plate is half a megabyte on the wire and 16 MB decoded, so three of
+    # them for each of two neighbours was 100 MB of a phone's image memory
+    # held against a move that might never come. A neighbour keeps its
+    # poster, which is a quarter-size copy of the same wall and a few
+    # kilobytes, so a jump still lands on the right room and never on bare
+    # ground - and the plate it is standing in for arrives behind the
+    # morph, under a front that is still crossing.
     a(".bzk-wg > i{display:none}")
-    a(".bzk-stage .bzk-wg:nth-child(-n+2) > i{display:block}")
+    a(".bzk-stage .bzk-wg:nth-child(1) > i{display:block}")
     for k in range(1, MAXPETS + 1):
-        a(",".join(".bzk-pa:nth-of-type(%d):target ~ .bzk-stage .bzk-wg:nth-child(%d) > i"
-                   % (k, j) for j in (k - 1, k, k + 1) if 1 <= j <= MAXPETS)
-          + "{display:block}")
+        a(".bzk-pa.f%d:target ~ .bzk-stage .bzk-wg:nth-child(%d) > i"
+          "{display:block}" % (k, k))
+    # the incoming place's ink, for the churning characters on the front
+    a(".bzk-stage.k-%s{--ink:%s}" % (pets[0]["kind"], ramp(pets[0]["kind"])[2]))
+    for i, p in enumerate(pets, 1):
+        a(".bzk-pa.f%d:target ~ .bzk-stage{--ink:%s}" % (i, ramp(p["kind"])[2]))
     # the default pet opens once the boot screen has gone
     a(".bzk-stage .bzk-pet:nth-child(1){--shn:bzk-sx,bzk-sy;--hon:bzk-hand;--cln:none;"
       "--shd:calc(var(--boot) + .45s)}")
-    # only the focused pet and its neighbours are allowed to load a full sheet
-    a(".bzk-stage .bzk-pet:nth-child(-n+2) .bzk-win{display:block}")
+    # ONLY THE FOCUSED PET LOADS A SHEET. A sheet is 3200x4000 - 1.3 MB on
+    # the wire and 51 MB decoded, measured - and only the focused pet ever
+    # plays one. Keeping the neighbours' sheets warm cost 100 MB of a
+    # phone's image memory and two megabytes of its data to save a third of
+    # a second, and the closed frame is already underneath, lit, for exactly
+    # this: a sheet that has not arrived shows the pet as coloured ASCII
+    # rather than a blank box.
+    a(".bzk-stage .bzk-pet:nth-child(1) .bzk-win{display:block}")
     a(".bzk-pa:target ~ .bzk-stage .bzk-fo{visibility:hidden;--run:none;--on2:0}")
     a(".bzk-pa:target ~ .bzk-stage .bzk-ix{--on2:0}")
     a(".bzk-pa:target ~ .bzk-stage .bzk-pet{--shn:none;--hon:none;"
       "--cln:bzk-cx,bzk-cy;--shd:var(--slide)}")
     a(".bzk-pa:target ~ .bzk-stage .bzk-win{display:none}")
     for k in range(1, MAXPETS + 1):
-        a(".bzk-pa:nth-of-type(%d):target ~ .bzk-stage .n%d{visibility:visible;"
+        a(".bzk-pa.f%d:target ~ .bzk-stage .n%d{visibility:visible;"
           "--run:bzk-type;--on2:1}" % (k, k))
-        a(".bzk-pa:nth-of-type(%d):target ~ .bzk-stage .bzk-pet:nth-child(%d){"
+        a(".bzk-pa.f%d:target ~ .bzk-stage .bzk-pet:nth-child(%d){"
           "--shn:bzk-sx,bzk-sy;--hon:bzk-hand;--cln:none}" % (k, k))
-        a(",".join(".bzk-pa:nth-of-type(%d):target ~ .bzk-stage .bzk-pet:nth-child(%d) .bzk-win"
-                   % (k, j) for j in (k - 1, k, k + 1) if 1 <= j <= MAXPETS)
-          + "{display:block}")
+        a(".bzk-pa.f%d:target ~ .bzk-stage .bzk-pet:nth-child(%d) "
+          ".bzk-win{display:block}" % (k, k))
 
     # ---- phone -------------------------------------------------------------
     # single-size bar text, taller nav and index rows so every target is 44px
@@ -768,6 +1010,15 @@ def build_css(pets, man):
       ".bzk-pet .bzk-win{display:none !important}"
       ".bzk-pet .bzk-img{opacity:var(--on);animation:none}"
       ".bzk-pet .bzk-closed{opacity:calc(1 - var(--on))}"
+      # the grain stays, it simply stops moving; the morph becomes a short
+      # cross-fade and its churning band never appears
+      ".bzk-wg{-webkit-mask-image:none !important;mask-image:none !important}"
+      # the three transition times this file sets anywhere, all brought to
+      # the same 0.3 s - the fade in, the ordinary fade out and the hold
+      # the morph asks for - so none of them needs !important to win
+      "#my-overlay .bzk-stage{--sweep:.3s;--wsweep:.3s;--owd:.3s;--odl:0s}"
+      ".bzk-wg{transition:opacity .3s linear}"
+      ".bzk-cb{display:none}"
       "}")
 
 
@@ -841,9 +1092,10 @@ def bar_html(pets, man):
     for i in range(1, n + 1):
         pv = n if i == 1 else i - 1
         nx = 1 if i == n else i + 1
+        # `<` is moving backward and `>` forward, wrapping at both ends
         o.append('<span class="bzk-nav bzk-fo n%d">'
-                 '<a class="bzk-pv" href="#p%d"><i></i></a>'
-                 '<a class="bzk-nx" href="#p%d"><i></i></a></span>' % (i, pv, nx))
+                 '<a class="bzk-pv" href="#p%db"><i></i></a>'
+                 '<a class="bzk-nx" href="#p%da"><i></i></a></span>' % (i, pv, nx))
     o.append("</div></div>")
     return "".join(o)
 
@@ -873,9 +1125,10 @@ def pet_html(i, p, base=""):
     else:
         o.append('<u class="bzk-closed bzk-fake"></u>')
     o.append('<img class="bzk-img" src="%s" alt="%s">'
-             '<a class="bzk-sel" href="#p%d"></a>'
+             '<a class="bzk-sf" href="#p%da"></a>'
+             '<a class="bzk-sb" href="#p%db"></a>'
              '<a class="bzk-go" href="%s"></a></div>'
-             % (im, nm, i, esc(p["href"])))
+             % (im, nm, i, i, esc(p["href"])))
     return "".join(o)
 
 
@@ -885,15 +1138,30 @@ def body(pets, man, base=""):
     n = len(pets)
     o = []
     o.append('<div id="my-overlay" style="%s">%s' % (OVERLAY_STYLE, BOOT))
+    # THREE ANCHORS PER PET. #pN is pet N with no direction (the index
+    # strip, and any link from outside); #pNa is pet N arrived at moving
+    # forward and #pNb moving backward. All three say "pet N focused"
+    # through their fN class; the da/db classes only turn the morph's
+    # front round.
+    # An anchor is as short as it can be made: a one-letter tag, the hook
+    # class, its pet's fN and, on two of the three, the direction. What
+    # room the pet stands in used to be a class here as well, three times
+    # per pet; it is a per-pet rule in the stylesheet now, where it costs
+    # the paste nothing. At forty pets that is three thousand characters.
     for i, p in enumerate(pets, 1):
-        o.append('<span class="bzk-pa k-%s l-%s" id="p%d"></span>'
-                 % (p["kind"], p["light"], i))
-    o.append('<div class="bzk-stage k-%s l-%s" style="visibility:hidden">'
-             % (pets[0]["kind"], pets[0]["light"]))
-    # the wall: one group per pet, a poster and three captured moments
+        for sfx, dcls in (("", ""), ("a", " da"), ("b", " db")):
+            o.append('<i class="bzk-pa f%d%s" id="p%d%s"></i>'
+                     % (i, dcls, i, sfx))
+    o.append('<div class="bzk-stage k-%s" style="visibility:hidden">'
+             % pets[0]["kind"])
+    # the wall: one group per pet, a poster and three captured moments,
+    # then the band of churning characters that rides the morph's front,
+    # then the grain, which is over all of it and under everything else
     o.append('<div class="bzk-wall">')
     for i, p in enumerate(pets, 1):
         o.append('<div class="bzk-wg n%d"><u></u><i></i><i></i><i></i></div>' % i)
+    o.append('<i class="bzk-cb"><u class="bzk-cg"></u></i>')
+    o.append('<u class="bzk-grain"></u>')
     o.append("</div>")
     # pets
     o.append('<div class="bzk-row">')
@@ -1028,15 +1296,12 @@ def attach_reveal(pets, warn):
         rv = {"key": key, "cols": cols, "rows": rows, "frames": frames or cols * rows,
               "duration_s": dur, "sheet": REVEAL_URL + sheet,
               "closed": REVEAL_URL + closed, "close": None}
-        # the optional closing sheet is described inside the pet's own entry
-        cfile = e.get("close") or (key + "-close.webp")
-        if os.path.isfile(os.path.join(REVEAL_DIR, cfile)):
-            cframes = int(e.get("close_frames", 0) or 0)
-            crows = int(e.get("close_rows", 0) or 0) or (cframes // cols if cols else 0)
-            cdur = float(e.get("close_duration_s", 0) or 0)
-            if crows >= 1 and cdur > 0:
-                rv["close"] = {"cols": cols, "rows": crows, "duration_s": cdur,
-                               "file": REVEAL_URL + cfile}
+        # THE REVERSE CLOSING SHEET IS NOT SHIPPED. reveal.py still makes one
+        # and it is still correct; the page does not use it. It is close to a
+        # megabyte per pet, it only ever plays while a pet is LEAVING the
+        # middle - behind the pet coming in, over a wall that is already
+        # crossfading - and nobody has ever watched it. The closed frame
+        # takes the pet back on its own.
         p["rev"] = rv
 
 # --------------------------------------------------------------------------- #
@@ -1063,10 +1328,11 @@ def main(argv=None):
     attach_reveal(pets, warn)
     man = read_plates(warn)
     attach_plates(pets, man, warn)
+    fx = read_fx(warn)
     for w in warn:
         print("WARNING:", w)
 
-    css = build_css(pets, man) + plate_css(pets, man)
+    css = build_css(pets, man, fx) + plate_css(pets, man)
 
     base = cdn_base()
     paste = '<link rel="stylesheet" href="%s">\n%s\n' % (cdn_css(), body(pets, man, base))
