@@ -114,11 +114,20 @@ NAME_FONT = "fonts/unifrakturcook-latin-700-normal.woff2"
 # the KIND, so two pets in the same room leave both untouched.
 SW_FILE = "sweep.png"
 SW_CELL = (7, 13)
-SW_COLS = 32      # the band is 224 px wide
-SW_ROWS = 24      # and tiles every 312 px
-SW_RUN = ".9s"
-SW_STEPS = 96     # the reveal edge jumps 100vw / 96 (15 px at 1440) a time
-SW_CHURN = ".15s"  # one 4-step turn of the band's characters
+SW_COLS = 32       # the texture tiles across the band every 224 px
+SW_ROWS = 18       # one frame is 18 rows, 234 px
+SW_FRAMES = 8      # EIGHT DIFFERENT FRAMES, stacked into one sheet
+SW_RUN = "1.3s"
+SW_STEPS = 96      # the slanted edge advances a cell at a time
+SW_CHURN = ".085s"  # the portfolio's churn: about twelve frames a second
+# The portfolio's morph constants: tilt .34 (the front line moves .34 of the
+# viewport's height sideways over its full height, which is 18.78 degrees off
+# vertical at every aspect ratio, since both terms are in vh), band .24 of the
+# screen, jitter .22 on the per-cell alpha.
+SW_TILT = 34       # vh
+SW_SKEW = 18.78    # degrees, atan(.34)
+SW_BAND = 24       # vw
+SW_JITTER = 0.22
 
 # the kind's four-stop ramp, as in the heavy build (hue, lightness, sat mult)
 ENV = {
@@ -471,7 +480,7 @@ def make_sweep(warn):
         warn.append("no Pillow - no sweep band (%s)" % exc)
         return None
     cw, ch, cols, rows = SW_CELL[0], SW_CELL[1], SW_COLS, SW_ROWS
-    W, H = cw * cols, ch * rows
+    W, H = cw * cols, ch * rows * SW_FRAMES
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
     font = None
@@ -489,27 +498,35 @@ def make_sweep(warn):
         except Exception as exc:
             warn.append("sweep band falls back to blocks (%s)" % exc)
     rnd = random.Random(20261125)
-    glyphs = "&@%#*+=-:.oxX!/\\|[]<>"
+    glyphs = " .:-=+*#%&@"
     cols_rgb = [tuple(int(TINT[i:i + 2], 16) for i in (1, 3, 5)),
                 tuple(int(TEXT[i:i + 2], 16) for i in (1, 3, 5))]
     for cx in range(cols):
         x = cx / float(cols - 1)
-        p = 1.0 - abs(2.0 * x - 1.0) ** 1.8      # 1 in the middle, 0 at the edges
-        for cy in range(rows):
-            if rnd.random() > min(1.0, p * 1.25):
+        # DENSE ON THE FRONT LINE, SCATTERED SINGLE CELLS AT BOTH EDGES.
+        # The front line runs through the band's middle, so the profile is
+        # symmetric and the same sheet serves a move in either direction.
+        p = max(0.0, 1.0 - abs(2.0 * x - 1.0) ** 1.4) ** 1.1
+        for cy in range(rows * SW_FRAMES):
+            if rnd.random() > min(1.0, p * 1.08):
                 continue
-            al = int(255 * max(0.18, min(1.0, p * 1.35 * rnd.uniform(.6, 1.1))))
+            al = int(255 * max(0.10, min(1.0, p * (1.0 - SW_JITTER)
+                                         * rnd.uniform(.55, 1.35))))
             r, g, b = cols_rgb[0] if rnd.random() < .45 else cols_rgb[1]
             px, py = cx * cw, cy * ch
-            if font is None or rnd.random() < .30:
-                # a block cell, inset so the grid stays visible
-                d.rectangle([px + 1, py + 2, px + cw - 2, py + ch - 3],
+            if font is None or rnd.random() < .22:
+                d.rectangle([px + 1, py + 3, px + cw - 2, py + ch - 4],
                             fill=(r, g, b, int(al * .8)))
             else:
-                d.text((px, py + ch - 3), rnd.choice(glyphs), font=font,
+                g_ = rnd.choice(glyphs[max(1, int(len(glyphs) * p * .55)):])
+                d.text((px, py + ch - 3), g_, font=font,
                        fill=(r, g, b, al), anchor="ls")
     out = os.path.join(HERE, SW_FILE)
-    im.save(out, "PNG", optimize=True)
+    # QUANTISED, ALPHA KEPT. Eight frames of RGBA at this size is a 150 KB
+    # PNG; FASTOCTREE to 64 colours keeps the alpha channel and a third of
+    # the weight.
+    im.quantize(colors=64, method=Image.FASTOCTREE).save(out, "PNG",
+                                                         optimize=True)
     return os.path.getsize(out)
 
 
@@ -720,14 +737,15 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
       "--mono:\"BZKMono\",ui-monospace,monospace;--black:\"BZKBlack\",serif;"
       "--focus:%dpx;--sz:%dpx;--fs:%.3f;--gap:%dpx;--step:%dpx;--near:%.3f;"
       "--cy:44%%;--nmz:1;"
-      "--swp:%s;--rfade:.12s;--swbw:%dpx;--swch:%dpx;--swchr:%s;"
+      "--swp:%s;--swbw:%dvw;--swtw:%dpx;--swsh:%dpx;--swchr:%s;"
       "--slide:%s;--fade:%s;--boot:%s;--bbot:26px;--bpad:16px;--bs:.78;"
       "position:fixed;top:0;left:0;width:100vw;height:100vh;"
       "z-index:999999999;background:var(--ink);overflow:hidden;"
       "font-family:var(--mono);color:var(--text);"
       "-webkit-font-smoothing:antialiased}"
       % (INK, TEXT, DIM, LINE, TINT, ACCENT, FOCUS, ART, FSCALE, GAP, STEP,
-         NEAR, SW_RUN, SW_CELL[0] * SW_COLS, SW_CELL[1], SW_CHURN,
+         NEAR, SW_RUN, SW_BAND, SW_CELL[0] * SW_COLS,
+         SW_CELL[1] * SW_ROWS * SW_FRAMES, SW_CHURN,
          SLIDE, FADE, BOOT))
     a("#my-overlay *{box-sizing:border-box;margin:0;padding:0;border:0}")
     # the LOADING gate the inline style put up, taken down from here
@@ -737,35 +755,60 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
     a(".bzk-pa{position:absolute;width:0;height:0}")
 
     # ---- the wall: six loops, one per kind ---------------------------------
-    a(".bzk-wall{position:absolute;inset:0;z-index:0}")
-    # A ROOM THAT IS NEITHER CURRENT NOR FADING OUT IS display:none.
-    # MEASURED: opacity:0 does NOT stop a video decoding and display:none
-    # does, which is the whole reason there are six videos and not one per
-    # pet - every hidden autoplay video still downloads, whatever is done
-    # to it. transition-behavior:allow-discrete keeps the outgoing room
-    # displayed for the whole 0.5 s fade, and @starting-style gives the
-    # incoming one an opacity to come from.
-    # THE OUTGOING ROOM IS HELD FOR THE WHOLE SWEEP. display is transitioned
-    # for --swp with allow-discrete, so it stays block and FULLY VISIBLE
-    # underneath while the incoming room, one z-index above it, is uncovered
-    # cell by cell. The 0.12 s opacity is only there so that
-    # prefers-reduced-motion has something to lengthen into a plain fade.
-    a(".bzk-rm{position:absolute;inset:0;display:none;opacity:0;z-index:1;"
-      "background-position:center center;background-size:cover;"
+    # THE WALL CARRIES THE FIRST ROOM'S POSTER. There is then no instant at
+    # any point in the page's life where the bottom of the stack is black.
+    first_poster = (rooms[order[0]] or {}).get("poster") if order else None
+    a(".bzk-wall{position:absolute;inset:0;z-index:0;"
+      "background:%scenter center / cover no-repeat var(--ink)}"
+      % ("url(%s) " % first_poster if first_poster else ""))
+    # ======================================================================= #
+    # REPLACEABLE SECTION: WHICH ROOM IS ON SCREEN                            #
+    # NO display, AND NO allow-discrete. In a real browser the outgoing room
+    # vanished at once and the sweep uncovered BLACK - Billy, 2026-11-26.
+    # The hold is a plain transition that every browser has had for fifteen
+    # years: the INACTIVE state delays opacity and visibility by the whole
+    # sweep at zero duration, so a room that was the current one stays fully
+    # opaque underneath until the sweep is over and then snaps off, and a
+    # room that was already hidden never changes value and so never
+    # transitions. The ACTIVE state has transition:none, so the incoming
+    # room is simply there, at full opacity, with the clip hiding it.
+    # EVERY ROOM KEEPS ITS POSTER AS A CSS BACKGROUND, so the worst thing
+    # that can happen to the outgoing room is that it falls back to a still.
+    # ======================================================================= #
+    a(".bzk-rm{position:absolute;inset:0;opacity:0;visibility:hidden;"
+      "z-index:1;background-position:center center;background-size:cover;"
       "background-repeat:no-repeat;background-color:var(--ink);"
-      "animation:bzk-swp var(--swp) steps(%d,jump-none) both;"
-      "transition:opacity var(--rfade) linear var(--swp),display var(--swp);"
-      "transition-behavior:allow-discrete}" % SW_STEPS)
-    # THE REVEAL ITSELF. clip-path only - no mask, no blend mode, nothing on
-    # the wall that makes the compositor read a pixel back.
-    a("@keyframes bzk-swp{from{clip-path:var(--swc)}to{clip-path:inset(0)}}")
+      "animation-name:none;animation-duration:var(--swp);"
+      "animation-timing-function:steps(%d,jump-none);"
+      "animation-fill-mode:both;"
+      "transition:opacity 0s linear var(--swp),"
+      "visibility 0s linear var(--swp)}" % SW_STEPS)
+    # THE REVEAL ITSELF. A four-point polygon with a slanted leading edge,
+    # the same four points at both ends so it interpolates. clip-path only -
+    # no mask, no blend mode, nothing on the wall that reads a pixel back.
+    # ONE SET OF KEYFRAMES PER ROOM, and the active room names its own.
+    # Without display:none there is no re-display to restart the clip on,
+    # so the restart is the animation-name changing - which happens when,
+    # and only when, the room does. Two pets in one room name the same
+    # animation and nothing is reconstructed.
+    for k in KINDS:
+        a("@keyframes bzk-swp-%s{from{clip-path:var(--swc0)}"
+          "to{clip-path:var(--swc1)}}" % k)
     # THE ID IS LOAD-BEARING. The inline gate in the paste is
     # `.bzk-wall>div>video{display:none}` at (0,1,2) and it beats a plain
     # `.bzk-rm > video` at (0,1,1) whatever the source order, so every
     # room was its poster and no video was ever on screen. MEASURED and
     # fixed, 2026-11-25. #my-overlay puts this at (1,1,1).
-    a("#my-overlay .bzk-rm > video{position:absolute;inset:0;display:block;"
-      "width:100%;height:100%;object-fit:cover;object-position:center center}")
+    # The hidden room's VIDEO is display:none, which is the only thing that
+    # stops it decoding; the room itself keeps its poster, so an outgoing
+    # room whose video goes early is a still picture and never a hole. The
+    # delayed discrete transition keeps the video running through the sweep
+    # where the browser supports it and falls back to that still where it
+    # does not.
+    a("#my-overlay .bzk-rm > video{position:absolute;inset:0;display:none;"
+      "width:100%;height:100%;object-fit:cover;object-position:center center;"
+      "transition:display 0s linear var(--swp);"
+      "transition-behavior:allow-discrete}")
     for k in order:
         e = rooms[k]
         if e.get("poster"):
@@ -778,33 +821,52 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
     # keyframes changes. A variable inside @keyframes does NOT restart an    #
     # animation, which is why turning round on the same room is silent.      #
     # ======================================================================= #
-    # THE BAND CLEARS THE SCREEN AT BOTH ENDS. Tracking the reveal edge with
-    # the band's centre parked half the band on screen when it was done; the
-    # travel is a band-width wider instead, so it ends off the edge and the
-    # edge it is hiding still falls inside it the whole way across.
-    a(".bzk-stage{--swc:inset(0 100% 0 0);"
-      "--swx0:calc(var(--swbw) * -1);--swx1:100vw}")
-    a(".bzk-pa.db:target ~ .bzk-stage{--swc:inset(0 0 0 100%);"
-      "--swx0:100vw;--swx1:calc(var(--swbw) * -1)}")
+    # THE FRONT LINE IS SLANTED, AND IT TRAVELS CORNER TO CORNER. The
+    # revealed side is a four-point polygon whose leading edge leans by
+    # --swt over the full height; a backward move is the mirror of it, and
+    # both ends of both directions have the same four points so the shape
+    # interpolates instead of jumping. The band is skewed to the SAME
+    # 18.78 degrees and rides the line, a band-width clear of the screen at
+    # each end so it never parks in view.
+    a(".bzk-stage{--swt:%dvh;--swk:-%sdeg;"
+      "--swc0:polygon(0%% 0%%,0%% 0%%,calc(0%% - var(--swt)) 100%%,0%% 100%%);"
+      "--swc1:polygon(0%% 0%%,calc(100%% + var(--swt)) 0%%,100%% 100%%,"
+      "0%% 100%%);"
+      "--swx0:calc(var(--swbw) * -1.1);"
+      "--swx1:calc(100vw + var(--swt) + var(--swbw) * .1)}"
+      % (SW_TILT, SW_SKEW))
+    a(".bzk-pa.db:target ~ .bzk-stage{--swk:%sdeg;"
+      "--swc0:polygon(100%% 0%%,100%% 0%%,100%% 100%%,"
+      "calc(100%% + var(--swt)) 100%%);"
+      "--swc1:polygon(calc(0%% - var(--swt)) 0%%,100%% 0%%,100%% 100%%,"
+      "0%% 100%%);"
+      "--swx0:calc(100vw + var(--swt) + var(--swbw) * .1);"
+      "--swx1:calc(var(--swbw) * -1.1)}" % SW_SKEW)
     if sweep_bytes:
+        # transform-origin at the top-left corner, so the skew leans the
+        # band by exactly the --swt the polygon leans by.
         a(".bzk-sw{position:absolute;top:0;left:0;width:var(--swbw);"
           "height:100%;z-index:3;overflow:hidden;pointer-events:none;"
-          "transform:translateX(var(--swx1));"
+          "transform-origin:0 0;"
+          "transform:translateX(var(--swx1)) skewX(var(--swk));"
           "animation-name:var(--swn,none);animation-duration:var(--swp);"
           "animation-timing-function:linear;animation-fill-mode:both}")
-        # The churn: the strip is taller than the band and steps DOWN one
-        # cell row at a time, so the characters standing at any point on
-        # the screen change four times while the band crosses it.
+        # THE CHURN. The sheet is EIGHT different frames stacked, and the
+        # inner layer steps down a whole frame at a time at the portfolio's
+        # rate, so every character under the band is replaced twelve times a
+        # second. One transform on one clipped layer, nothing else.
         a('.bzk-sw::before{content:"";position:absolute;left:0;right:0;'
-          "top:calc(var(--swch) * -4);bottom:calc(var(--swch) * -4);"
-          "background-image:url(%s);background-repeat:repeat-y;"
-          "background-position:left top;"
-          "animation:bzk-swq var(--swchr) steps(4,jump-none) 6 both}" % SW_FILE)
+          "top:0;height:calc(100%% + var(--swsh));"
+          "background-image:url(%s);background-repeat:repeat;"
+          "background-size:var(--swtw) var(--swsh);"
+          "animation:bzk-swq calc(var(--swchr) * %d) steps(%d,jump-none) 2 both}"
+          % (SW_FILE, SW_FRAMES, SW_FRAMES))
         a("@keyframes bzk-swq{from{transform:translateY(0)}"
-          "to{transform:translateY(calc(var(--swch) * -4))}}")
+          "to{transform:translateY(calc(var(--swsh) * -1))}}")
         for k in KINDS:
-            a("@keyframes bzk-sw-%s{from{transform:translateX(var(--swx0))}"
-              "to{transform:translateX(var(--swx1))}}" % k)
+            a("@keyframes bzk-sw-%s{"
+              "from{transform:translateX(var(--swx0)) skewX(var(--swk))}"
+              "to{transform:translateX(var(--swx1)) skewX(var(--swk))}}" % k)
     # ==================== end REPLACEABLE: THE SWEEP ======================= #
 
     # THE OPACITY FADE IS NOW REDUCED-MOTION ONLY. Under the sweep the
@@ -813,14 +875,21 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
     # the whole 0.9 s, which is the delay on the transition above. A
     # @starting-style here would fade the incoming in through the band, so
     # the whole set of them is emitted inside the reduced-motion query.
-    start_fade = []
-
     def roomrule(sel, kind):
-        a("%s .bzk-rm.m-%s{display:block;opacity:1;z-index:2}" % (sel, kind))
-        start_fade.append("%s .bzk-rm.m-%s{opacity:0}" % (sel, kind))
+        a("%s .bzk-rm.m-%s{opacity:1;visibility:visible;z-index:2;"
+          "transition:none;animation-name:var(--swpn,none)}" % (sel, kind))
+        # #my-overlay, because the base video rule carries that id and no
+        # number of classes outranks it.
+        a("#my-overlay %s .bzk-rm.m-%s > video{display:block;transition:none}"
+          % (sel, kind))
 
     roomrule(".bzk-stage", pets[0]["kind"])
-    a(".bzk-pa:target ~ .bzk-stage .bzk-rm{display:none;opacity:0}")
+    a(".bzk-pa:target ~ .bzk-stage .bzk-rm{opacity:0;visibility:hidden;"
+      "z-index:1;transition:opacity 0s linear var(--swp),"
+      "visibility 0s linear var(--swp)}")
+    a("#my-overlay .bzk-pa:target ~ .bzk-stage .bzk-rm > video{display:none;"
+      "transition:display 0s linear var(--swp);"
+      "transition-behavior:allow-discrete}")
     seen = set()
     for i, p in enumerate(pets, 1):
         roomrule(".bzk-pa.f%d:target ~ .bzk-stage" % i, p["kind"])
@@ -1044,8 +1113,8 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
         # --swn IS THE ROOM, NOT THE PET. Two pets in the same room name
         # the same animation, the band is never reconstructed, and the
         # move passes with no sweep at all.
-        a("%s{--trot:%s;--tsat:%s;--swn:bzk-sw-%s}"
-          % (sel, trot, tsat, pets[f - 1]["kind"]))
+        a("%s{--trot:%s;--tsat:%s;--swn:bzk-sw-%s;--swpn:bzk-swp-%s}"
+          % (sel, trot, tsat, pets[f - 1]["kind"], pets[f - 1]["kind"]))
         # the prefetch list for this state: both neighbours' sheets, bar
         # plates and room poster
         pv, nx = ((f - 2) % n) + 1, (f % n) + 1
@@ -1116,10 +1185,11 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
       ".bzk-sw{display:none !important}"
       "#my-overlay .bzk-rm > video{display:none !important}"
       # the sweep becomes the crossfade this build shipped with
+      # the sweep becomes a plain crossfade: every room visible, only
+      # the current one opaque, nothing discrete anywhere
       "#my-overlay .bzk-rm{clip-path:none !important;"
-      "transition:opacity .4s linear,display .4s !important;"
-      "transition-behavior:allow-discrete !important}"
-      "@starting-style{" + "".join(start_fade) + "}}")
+      "visibility:visible !important;"
+      "transition:opacity .4s linear !important}}")
     return "\n".join(L) + "\n"
 
 
