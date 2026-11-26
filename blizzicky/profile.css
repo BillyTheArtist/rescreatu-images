@@ -1,7 +1,7 @@
 @font-face{font-family:"BZKMono";font-weight:400;font-style:normal;font-display:swap;src:url("fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2")}
 @font-face{font-family:"BZKMono";font-weight:500;font-style:normal;font-display:swap;src:url("fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2")}
 @font-face{font-family:"BZKBlack";font-weight:700;font-style:normal;font-display:swap;src:url("fonts/unifrakturcook-latin-700-normal.woff2") format("woff2")}
-#my-overlay{--ink:#05070a;--text:#c6d6d0;--dim:#677c78;--line:#28373c;--tint:#9fd8bd;--accent:#ff4b2b;--mono:"BZKMono",ui-monospace,monospace;--black:"BZKBlack",serif;--focus:200px;--sz:200px;--gap:200px;--step:150px;--near:0.580;--cy:44%;--slide:.34s;--fade:.5s;--boot:.18s;--bbot:26px;--bpad:16px;--bs:.78;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999999999;background:var(--ink);overflow:hidden;font-family:var(--mono);color:var(--text);-webkit-font-smoothing:antialiased}
+#my-overlay{--ink:#05070a;--text:#c6d6d0;--dim:#677c78;--line:#28373c;--tint:#9fd8bd;--accent:#ff4b2b;--mono:"BZKMono",ui-monospace,monospace;--black:"BZKBlack",serif;--focus:256px;--sz:200px;--fs:1.280;--gap:290px;--step:140px;--near:0.500;--cy:44%;--nmz:1;--slide:.34s;--fade:.5s;--boot:.18s;--bbot:26px;--bpad:16px;--bs:.78;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999999999;background:var(--ink);overflow:hidden;font-family:var(--mono);color:var(--text);-webkit-font-smoothing:antialiased}
 #my-overlay *{box-sizing:border-box;margin:0;padding:0;border:0}
 #bzk-boot{z-index:60;animation:bzk-off .3s linear var(--boot) forwards}
 @keyframes bzk-off{to{opacity:0;visibility:hidden}}
@@ -35,44 +35,42 @@
 .bzk-pet{position:absolute;left:calc(var(--sz) / -2);top:calc(var(--sz) / -2);width:var(--sz);height:var(--sz);display:none;transform:translateX(var(--x,0px)) scale(var(--s,1));opacity:var(--o,1);will-change:transform;transition:transform var(--slide) cubic-bezier(.3,.7,.2,1),opacity var(--slide) linear}
 .bzk-pet > u,.bzk-pet > span,.bzk-pet > img{position:absolute;top:0;left:0;width:var(--sz);height:var(--sz);display:block}
 .bzk-closed{z-index:2;background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated}
+.bzk-closed::before{content:"";position:absolute;inset:0;display:var(--pixd,block);background-image:var(--pix,none);background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated}
 .bzk-win{z-index:3;overflow:hidden;display:none}
 .bzk-sr{position:absolute;top:0;left:0;width:var(--sz);height:calc(var(--sz) * var(--rr,1));animation-name:var(--rvy,none);animation-fill-mode:forwards;animation-delay:var(--rvd,0s)}
 .bzk-sh{position:absolute;top:0;left:0;width:calc(var(--sz) * var(--rc,1));height:calc(var(--sz) * var(--rr,1));background-size:100% 100%;background-repeat:no-repeat;animation-name:var(--rvx,none);animation-fill-mode:forwards;animation-delay:var(--rvd,0s)}
 @keyframes bzk-rvx{from{transform:translateX(0)}to{transform:translateX(var(--rxe))}}
 @keyframes bzk-rvy{from{transform:translateY(0)}to{transform:translateY(var(--rye))}}
-.bzk-img{z-index:4;opacity:1;animation-name:var(--hon,none);animation-duration:.15s;animation-timing-function:linear;animation-delay:calc(var(--rvd,0s) + var(--T,0s));animation-fill-mode:forwards}
+.bzk-img{z-index:4;opacity:0;animation-name:var(--hon,none);animation-duration:.15s;animation-timing-function:linear;animation-delay:calc(var(--rvd,0s) + var(--T,0s));animation-fill-mode:forwards}
 @keyframes bzk-hand{from{opacity:0}to{opacity:1}}
 .bzk-pet a{position:absolute;top:0;left:0;width:var(--sz);height:var(--sz);z-index:6;display:block;cursor:pointer}
 .bzk-pet a:focus-visible::after{content:"";position:absolute;inset:-6px;background-image:linear-gradient(var(--tint),var(--tint)),linear-gradient(var(--tint),var(--tint)),linear-gradient(var(--tint),var(--tint)),linear-gradient(var(--tint),var(--tint));background-size:5px 5px;background-repeat:no-repeat;background-position:left top,right top,left bottom,right bottom}
 .bzk-pet{--tf:grayscale(1) sepia(1) saturate(var(--tsat,1)) hue-rotate(calc(var(--trot,0) * 1deg)) brightness(.82) contrast(.88);--flt:var(--tf)}
 .bzk-pet > img,.bzk-pet > u{filter:var(--flt)}
-.bzk-names{position:absolute;left:0;right:0;top:calc(var(--cy) + var(--focus) / 2 + 18px);height:34px;z-index:9;text-align:center}
-.bzk-nm{position:absolute;left:0;right:0;top:0;white-space:nowrap}
-.bzk-nm b{font-family:var(--black);font-weight:700;font-size:27px;line-height:1.2;color:var(--text);letter-spacing:.02em;text-shadow:0 0 10px rgba(0,0,0,.85);animation-name:var(--run,none);animation-duration:var(--at,0s);animation-timing-function:linear}
-@keyframes bzk-type{from,to{opacity:0}}
-.bzk-nm i{display:inline-block;width:12px;height:19px;margin-left:3px;background:var(--tint);vertical-align:-2px;font-style:normal;animation:bzk-blink 2s steps(1,end) infinite}
-@keyframes bzk-blink{0%,49.9%{opacity:1}50%,100%{opacity:0}}
-.bzk-nm b:nth-child(1){--k:0}
-.bzk-nm b:nth-child(2){--k:1}
-.bzk-nm b:nth-child(3){--k:2}
-.bzk-nm b:nth-child(4){--k:3}
-.bzk-nm b:nth-child(5){--k:4}
-.bzk-nm b:nth-child(6){--k:5}
-.bzk-nm b:nth-child(7){--k:6}
-.bzk-nm b:nth-child(8){--k:7}
-.bzk-nm b:nth-child(9){--k:8}
-.bzk-nm b:nth-child(10){--k:9}
-.bzk-nm b:nth-child(11){--k:10}
-.bzk-nm b:nth-child(12){--k:11}
-.bzk-nm b:nth-child(13){--k:12}
-.bzk-nm b:nth-child(14){--k:13}
-.bzk-nm b:nth-child(15){--k:14}
-.bzk-nm b:nth-child(16){--k:15}
-.bzk-nm b:nth-child(17){--k:16}
-.bzk-nm b:nth-child(18){--k:17}
-.bzk-nm b:nth-child(19){--k:18}
-.bzk-nm b:nth-child(20){--k:19}
-.bzk-nm b{--at:calc(.26s + var(--k,0) * 0.0294s)}
+.bzk-names{position:absolute;left:0;right:0;top:calc(var(--cy) + var(--focus) / 2 + 12px);height:0;z-index:9}
+.bzk-nm{position:absolute;left:0;right:0;top:0;height:0}
+.bzk-nm::before,.bzk-nm::after{position:absolute;left:50%;top:0;transform:translateX(-50%);white-space:pre;text-align:left;font-family:var(--mono);font-weight:400;line-height:1;font-size:min(calc(var(--nmk,1) * var(--nmz,1) * 1vw),1.45vh,15px);text-shadow:0 0 3px rgba(5,7,10,.95),0 1px 2px rgba(5,7,10,.95);animation-name:var(--run,none);animation-duration:.4s;animation-timing-function:linear;animation-fill-mode:both}
+.bzk-nm::before{z-index:2;color:var(--text)}
+.bzk-nm::after{z-index:1;color:#93a8a2}
+@keyframes bzk-type{from{opacity:0}to{opacity:1}}
+.bzk-nm.n1{--nmk:1.0234}
+.bzk-nm.n1::before{content:"            *#                             =**                *#     =                              ##+          *\00000a           @@&                            +@@*               @@#   *@@&                           +@@@@&     +*&@@\00000a           &@#                             @@+               @@#    #@@&                         ##=*@@@@= ###&@@@\00000a #@*=&@+   &@#    +&@#+    =&@&*   *&@#    @@#&@*    =#@&=   @@#   +#&@@#  =*@@*   *@#+&&=      +@    &@@&    =@@&\00000a+&@@&&@@*  &@#  +&@*#@@@  *@*#@&+=@@&#@@#  @@#@@@* =&@#&@@+  @@*  @@+ &@@=+@@##@@# #@@#&@@=     #@#    @@@=    @@&\00000a +@@+ *@@= &@#  #@@  &@& =@#      @@= ##   @@+ &@@ =@@= #@@  @@* =@@  =@@# @@= &#  *@@  **      *@@*   +@@    =@@&\00000a +@@=  &@+ &@#  #@@  &@# *@@=     @@##=    @@+ =@@==@@=  @@  @@*  @@=  &@& @@##=   *@@           @@@#  *@*    +@@&\00000a=@@@&*+&= =@@&+ #@@= &@&  @@@###  @@@#+*= #@@&= @@ *@@&+*&  +@@&+ @@@*+&#==@@@#+*  #@@#=         =@@@@@@*     #@@&\00000a #@@@@&   =#@@* *@@@##@&=  &@&+   +#&@@#  +&@&= @& =*&@@#   +&@@+  *&@&=   +#&@@*   *@&            &@@&=     +@@&#\00000a +@@++            =         =         =     =  +@=     =      =                =                    ==      =*=   \00000a #@@=                                         =@+                                                                 \00000a+#+                                           *+                                                                  "}
+.bzk-nm.n1::after{content:"           -                                                 -                                     :            - \00000a          :                                                 -                                           -   -     \00000a                             -            -            :                                                  :       \00000a:                      -        : -    -  -                       :             -                 -  :            \00000a                        -                 -                      -                                    :       -   \00000a                                 :      : -   -   :        :        -     -           -                   -       \00000a                                          -             :  -     -        -                     -    :            \00000a                        --       -                -       -      -               -                                \00000a-      :                  -                                       -                -   -          -               \00000a            --     :  -                               -        :     -:       :      ::                           \00000a                                                                                                                  \00000a   -                                                                                                              "}
+.bzk-nm.n2{--nmk:0.9972}
+.bzk-nm.n2::before{content:"            *#                             =#*                *#     =                              ##=        ==    \00000a           @@&                            *@@+              =@@#   *@@#                           *@@@@#     +&@@@#  \00000a           &@#                            =@@=               @@*    #@@&                         #*=*@@@&   #@=*@@@@=\00000a #@*=&@+   &@#    +&@#+    =&@&*  =*@@*   =@@*&@+    =&@&    @@*   +#&@@*  =#@@*   #@#+@#       *@   =@@@& +@@#= &@@#\00000a+&@@&&@@*  &@#  *@@*#@@&  *@*#@&++@@##@@# =@@#@@@+ =&@*&@@=  @@* =@@+ &@@ +@@##@@* &@@*&@@      &@*   =@@@  &@@+ &@& \00000a +@@+ *@@= &@#  #@&  @@# +@#      @@= &#  =@@= @@@ +@@  &@@  @@* =@@  =@@*=@@  &*  #@@  **      #@@+   #@@   *  *@#  \00000a +@@=  &@+ &@#  #@&  @@# *@@=     @@##=   =@@= +@@ +@@  =@@  @@* =@@=  @@#=@@##    #@@          =@@@*  #@+     #&=  =\00000a=@@@&*+&= =@@&+ #@@= @@&  @@@### =@@@#+*  #@@#= @@ #@@#+#&  *@@&+ @@&*+&# +@@@*+*  &@@#          +@@@@@@+    =&@&##&#\00000a #@@@@&   =#@@* *@@@*#@&   &@&=   +#&@@*  *&@&  @# =#&@@*   +&@@+ =#&@&    +#&@@+   #@&           =&@@&     #@@@@@@@+\00000a +@@++            =         =         =     =  *@      =      =                                     ==     ==     == \00000a #@@=                                         =@+                                                                    \00000a+#+                                           *+                                                                     "}
+.bzk-nm.n2::after{content:"           -                                                 -                                     -             :   \00000a          :                                                                                                        - \00000a                             -                         :                                                 -           \00000a:                      -        :      -                 -        :             :        -                      :    \00000a                        :                                                :                -               ::        :\00000a                                 -            -       -             -        -                                -      \00000a                                 -                -   -    :                   -                                     \00000a                        --              -                 :      -       -       -     -                             \00000a-      :                - -                   -:                       -  :        -   -               -   -         \00000a            --        -              :           -    -        :     -:       :-     -                       -----  :\00000a                                                                                                                     \00000a   -                                                                                                                 "}
+.bzk-nm.n3{--nmk:0.9972}
+.bzk-nm.n3::before{content:"            *#                             =#*                *#     =                              ##=      *=      \00000a           @@&                            *@@+              =@@#   *@@#                           *@@@@#    *@@@@@&&+\00000a           &@#                            =@@=               @@*    #@@&                         #*=*@@@&   &####@&= \00000a #@*=&@+   &@#    +&@#+    =&@&*  =*@@*   =@@*&@+    =&@&    @@*   +#&@@*  =#@@*   #@#+@#       *@   =@@@&      &@+  \00000a+&@@&&@@*  &@#  *@@*#@@&  *@*#@&++@@##@@# =@@#@@@+ =&@*&@@=  @@* =@@+ &@@ +@@##@@* &@@*&@@      &@*   =@@@    +@@@@* \00000a +@@+ *@@= &@#  #@&  @@# +@#      @@= &#  =@@= @@@ +@@  &@@  @@* =@@  =@@*=@@  &*  #@@  **      #@@+   #@@     =#@@@+\00000a +@@=  &@+ &@#  #@&  @@# *@@=     @@##=   =@@= +@@ +@@  =@@  @@* =@@=  @@#=@@##    #@@          =@@@*  #@+  #&    @@#\00000a=@@@&*+&= =@@&+ #@@= @@&  @@@### =@@@#+*  #@@#= @@ #@@#+#&  *@@&+ @@&*+&# +@@@*+*  &@@#          +@@@@@@+  &@@+   &@ \00000a #@@@@&   =#@@* *@@@*#@&   &@&=   +#&@@*  *&@&  @# =#&@@*   +&@@+ =#&@&    +#&@@+   #@&           =&@@&    =&@@##&*  \00000a +@@++            =         =         =     =  *@      =      =                                     ==       =++=    \00000a #@@=                                         =@+                                                                    \00000a+#+                                           *+                                                                     "}
+.bzk-nm.n3::after{content:"           -                                                 -                                     -        :        \00000a          :                                                                                                          \00000a                             -                         :                                                 -           \00000a:                      -        :      -                 -        :             :        -                  -  -     \00000a                        :                                                :                -               :          \00000a                                 -            -       -             -        -                                       \00000a                                 -                -   -    :                   -                                 -   \00000a                        --              -                 :      -       -       -     -                            -\00000a-      :                - -                   -:                       -  :        -   -               -             \00000a            --        -              :           -    -        :     -:       :-     -                               \00000a                                                                                                                     \00000a   -                                                                                                                 "}
+.bzk-nm.n4{--nmk:1.0057}
+.bzk-nm.n4::before{content:"            *#                             +#=               =#+     =                             +#*        =*##  \00000a           @@#                            #@@               *@@=   &@@*                           &@@@@+      &@&=  \00000a           &@#                            +@@               =@@=    &@@+                        =&++&@@@*    #@# &+ \00000a #@*=&@+   &@#    *@@#+    =&@&+  =#@@*   +@@*&&=    +&@#   =@@=   *#&@@   +&@&+  =&&+#@*       &#   #@@@=  +@#+@@= \00000a+&@@&&@@*  &@#  *@@*#@@&  #&*#@&=+@@#&@@* +@@#@@@= *@@*@@&  =@@= *@@ =@@& &@@*&@&==@@&*@@&     =@@    #@@#  @# #@@  \00000a +@@+ *@@= @@#  &@&  @@* *@*     =@@  &*  *@@ +@@& #@@  @@# +@@= #@&  #@@ #@& =&=  @@#  #       @@&    @@* &@**&@@##\00000a +@@=  &@= @@#  #@&  @@* #@@     =@@##    *@@  *@@ #@@  *@# +@@  *@&  +@@+#@@*#    @@*          #@@&= =@& *@@@@@@@@&\00000a=@@@&*+&= +@@&+ &@@= @@& =@@@##* +@@@*+*  &@@* =@& &@@#+##  #@@# *@@&*+@* #@@&*++ =@@@+          &@@@@@&       @@@= \00000a #@@@@&   =&@@+ *@@@*#@#  =&@&=   +#&@@+  *@@# =@* +#@@@+   *@@&  +#@@#   =*#@@&   +&@*           *@@@*       *@@@+ \00000a +@@++      =     =         =               =  #&     =       =      =                              +         +=    \00000a #@@=                                         *@                                                                    \00000a+#+                                           *=                                                                    "}
+.bzk-nm.n4::after{content:"           -                                                        -                                             - \00000a          -                                  -                    :                              -           :    : \00000a                             -               -         :           -                                            -   \00000a:                      :               :                          -     -                                           \00000a                                                          :         :                             -        -      - \00000a                                    -:       :         :                 -             : -     -   :  :             \00000a                            -         -                        -                                                    \00000a                    :   :               ::    -                 -                                       :     :    :\00000a-      :                -        :       :    :                 -               -                                   \00000a             -        -              --                -                      -:     -             - :          -   \00000a                                                -                                                                   \00000a   -                                         -                                                                      "}
+.bzk-nm.n5{--nmk:1.0057}
+.bzk-nm.n5::before{content:"            *#                             =#*                *#     =                              ##=      =**+++ \00000a           @@&                            +@@+               @@#   *@@&                           +@@@@#     *@@@@# \00000a           &@#                             @@+               @@#    #@@&                         ##=*@@@@    &*+++  \00000a #@*=&@+   &@#    +&@#+    =&@&*   *&@#    @@#&@+    =#@&    @@#   +#&@@#  =#@@*   #@#+&#       +@    &@@&  =@@@&#= \00000a+&@@&&@@*  &@#  *@@*#@@@  *@*#@&+=@@&#@@#  @@#@@@* =&@#&@@+  @@*  @@+ &@@ +@@##@@# #@@*&@@=     #@#    @@@= *&&@@@@*\00000a +@@+ *@@= &@#  #@&  &@& =@#      @@= ##  =@@+ &@@ +@@= #@@  @@* =@@  =@@*=@@  &#  *@@  **      #@@*   *@@      =&@@\00000a +@@=  &@+ &@#  #@&  &@# *@@=     @@##=   =@@= =@@=+@@=  @@  @@*  @@=  &@& @@##=   *@@           @@@#  #@* *+    *@#\00000a=@@@&*+&= =@@&+ #@@= &@&  @@@###  @@@#+*= #@@#= @@ #@@&+*&  +@@&+ @@@*+&# =@@@*+*  &@@#          =@@@@@@*  &@&+ =@# \00000a #@@@@&   =#@@* *@@@##@&=  &@&+   +#&@@#  +&@&= @& =#&@@*   +&@@+  *&@&=   +#&@@*   #@&            &@@&=   #@@@@&+  \00000a +@@++            =         =         =     =  +@      =      =                =                    ==       =+=    \00000a #@@=                                         =@+                                                                   \00000a+#+                                           *+                                                                    "}
+.bzk-nm.n5::after{content:"           -                                                 -                                     -               -\00000a          :                                                 -                                           :           \00000a                             -            -            :                                                 -          \00000a:                      -        : -    -  -              -        :             -        -        -  -              \00000a                        -                 -                      -       -                            -             \00000a                                 :      :     -            :        -        -        :                   :         \00000a                                                        -  -     -        -                     -    :              \00000a                        --       -                -       -      -       -       -     -                       :    \00000a-      :                  -                                       -       :        -   -          -                 \00000a            --        -                          -    -        :     -:       :      ::                             \00000a                                                                                                                    \00000a   -                                                                                                                "}
+.bzk-nm.n6{--nmk:1.0057}
+.bzk-nm.n6::before{content:"            *#                             =**                *#     =                              ##+        &#   \00000a           @@&                            +@@*               @@#   *@@&                           +@@@@&     =@*    \00000a           &@#                             @@+               @@#    #@@&                         ##=*@@@@=  =@+     \00000a #@*=&@+   &@#    +&@#+    =&@&*   *&@#    @@#&@*    =#@&=   @@#   +#&@@#  =*@@*   *@#+&&=      +@    &@@&  @& #@&= \00000a+&@@&&@@*  &@#  +&@*#@@@  *@*#@&+=@@&#@@#  @@#@@@* =&@#&@@+  @@*  @@+ &@@=+@@##@@# #@@#&@@=     #@#    @@@=*@@#*&@@+\00000a +@@+ *@@= &@#  #@@  &@& =@#      @@= ##  =@@+ &@@ =@@= #@@  @@* =@@  =@@# @@= &#  *@@  **      *@@*   +@@ &@@   &@@\00000a +@@=  &@+ &@#  #@@  &@# *@@=     @@##=   =@@+ =@@==@@=  @@  @@*  @@=  &@& @@##=   *@@           @@@#  *@* #@@*  +@&\00000a=@@@&*+&= =@@&+ #@@= &@&  @@@###  @@@#+*= #@@&= @@ *@@&+*&  +@@&+ @@@*+&#==@@@#+*  #@@#=         =@@@@@@*   &@@#+*& \00000a #@@@@&   =#@@* *@@@##@&=  &@&+   +#&@@#  +&@&= @& =*&@@#   +&@@+  *&@&=   +#&@@*   *@&            &@@&=     *@@&*  \00000a +@@++            =         =         =     =  +@=     =      =                =                    ==              \00000a #@@=                                         =@+                                                                   \00000a+#+                                           *+                                                                    "}
+.bzk-nm.n6::after{content:"           -                                                 -                                     -          -  -  \00000a          :                                                 -                                           -       -   \00000a                             -            -            :                                                        :   \00000a:                      -        : -    -  -                       :             -                 -  -     :  -     \00000a                        -                 -                      -                                    :             \00000a                                 :      :     -   :        :        -     -           -                   -         \00000a                                                        :  -     -        -                     -    :              \00000a                        --       -                -       -      -               -                                 -\00000a-      :                  -                                       -                -   -          -                 \00000a            --     :  -                               -        :     -:       :      ::                        -    \00000a                                                                                                                    \00000a   -                                                                                                                "}
 .bzk-bar{position:absolute;left:50%;bottom:var(--bbot);z-index:10;width:min(calc(var(--bw0) * var(--bs)),calc(100vw - 2 * var(--bpad)));aspect-ratio:var(--bar);height:auto;transform:translateX(-50%)}
 .bzk-bp{position:absolute;inset:0;display:none;background-size:100% 100%;background-repeat:no-repeat}
 .bzk-hit{position:absolute;inset:0}
@@ -115,6 +113,8 @@
 .bzk-hit .bzk-nx > i::before{width:8000.0000%;height:500.0000%;left:-7800.0000%;top:-50.0000%}
 @media (max-width:620px){#my-overlay{--bar:399 / 130;--bw0:399px;--bh0:130px}.bzk-hit .k1{left:5.2632%;top:50.0000%;width:28.0702%;height:20.0000%;;--nm:"HATCHERY"}.bzk-hit .k1 > i::before{width:356.2500%;height:500.0000%;left:-18.7500%;top:-250.0000%}.bzk-hit .k2{left:35.0877%;top:50.0000%;width:31.5789%;height:20.0000%;;--nm:"INVENTORY"}.bzk-hit .k2 > i::before{width:316.6667%;height:500.0000%;left:-111.1111%;top:-250.0000%}.bzk-hit .k3{left:68.4211%;top:50.0000%;width:24.5614%;height:20.0000%;;--nm:"EXPLORE"}.bzk-hit .k3 > i::before{width:407.1429%;height:500.0000%;left:-278.5714%;top:-250.0000%}.bzk-hit .k4{left:12.2807%;top:70.0000%;width:17.5439%;height:20.0000%;;--nm:"SHOPS"}.bzk-hit .k4 > i::before{width:570.0000%;height:500.0000%;left:-70.0000%;top:-350.0000%}.bzk-hit .k5{left:31.5789%;top:70.0000%;width:28.0702%;height:20.0000%;;--nm:"MERCHANT"}.bzk-hit .k5 > i::before{width:356.2500%;height:500.0000%;left:-112.5000%;top:-350.0000%}.bzk-hit .k6{left:61.4035%;top:70.0000%;width:24.5614%;height:20.0000%;;--nm:"RANCHER"}.bzk-hit .k6 > i::before{width:407.1429%;height:500.0000%;left:-250.0000%;top:-350.0000%}.bzk-hit .x1{left:10.5263%;top:10.0000%;width:12.2807%;height:20.0000%;;--nm:"1"}.bzk-hit .x1 > i::before{width:814.2857%;height:500.0000%;left:-85.7143%;top:-50.0000%}.bzk-hit .x2{left:22.8070%;top:10.0000%;width:12.2807%;height:20.0000%;;--nm:"2"}.bzk-hit .x2 > i::before{width:814.2857%;height:500.0000%;left:-185.7143%;top:-50.0000%}.bzk-hit .x3{left:35.0877%;top:10.0000%;width:12.2807%;height:20.0000%;;--nm:"3"}.bzk-hit .x3 > i::before{width:814.2857%;height:500.0000%;left:-285.7143%;top:-50.0000%}.bzk-hit .x4{left:47.3684%;top:10.0000%;width:12.2807%;height:20.0000%;;--nm:"4"}.bzk-hit .x4 > i::before{width:814.2857%;height:500.0000%;left:-385.7143%;top:-50.0000%}.bzk-hit .x5{left:59.6491%;top:10.0000%;width:12.2807%;height:20.0000%;;--nm:"5"}.bzk-hit .x5 > i::before{width:814.2857%;height:500.0000%;left:-485.7143%;top:-50.0000%}.bzk-hit .x6{left:71.9298%;top:10.0000%;width:12.2807%;height:20.0000%;;--nm:"6"}.bzk-hit .x6 > i::before{width:814.2857%;height:500.0000%;left:-585.7143%;top:-50.0000%}.bzk-hit .bzk-pv{left:3.5088%;top:10.0000%;width:3.5088%;height:20.0000%;;--nm:"Previous"}.bzk-hit .bzk-pv > i::before{width:2850.0000%;height:500.0000%;left:-100.0000%;top:-50.0000%}.bzk-hit .bzk-nx{left:92.9825%;top:10.0000%;width:3.5088%;height:20.0000%;;--nm:"Next"}.bzk-hit .bzk-nx > i::before{width:2850.0000%;height:500.0000%;left:-2650.0000%;top:-50.0000%}}
 .bzk-pf{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;z-index:0;pointer-events:none;background-repeat:no-repeat;background-size:1px 1px}
+.bzk-pf::before{content:"";position:absolute;inset:0;background-repeat:no-repeat;background-size:1px 1px;background-image:url(pix/7-ginger-effect-derp-baby.png),url(pix/30-black-effect-undead.png),url(pix/45-albino-effect-stardust.png),url(pix/71-albino-effect-derp.png),url(pix/33-rainbow-effect-cosmic.png),url(pix/37-albino-effect-frostlight.png)}
+.bzk-pet:nth-child(1){--pix:url(pix/7-ginger-effect-derp-baby.png)}
 .bzk-pet:nth-child(1) > u{background-image:url(reveal/7-ginger-effect-derp-baby-closed.webp)}
 .bzk-pet:nth-child(1) .bzk-sh{background-image:url(reveal/7-ginger-effect-derp-baby.webp)}
 .bzk-pet:nth-child(1){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
@@ -122,6 +122,7 @@
 .bzk-pet:nth-child(1) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
 .bzk-bp.n1{background-image:url(plates/b-L-ink-7-ginger-effect-derp-baby.webp)}
 @media (max-width:620px){.bzk-bp.n1{background-image:url(plates/b-P-ink-7-ginger-effect-derp-baby.webp)}}
+.bzk-pet:nth-child(2){--pix:url(pix/30-black-effect-undead.png)}
 .bzk-pet:nth-child(2) > u{background-image:url(reveal/30-black-effect-undead-closed.webp)}
 .bzk-pet:nth-child(2) .bzk-sh{background-image:url(reveal/30-black-effect-undead.webp)}
 .bzk-pet:nth-child(2){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
@@ -129,6 +130,7 @@
 .bzk-pet:nth-child(2) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
 .bzk-bp.n2{background-image:url(plates/b-L-ink-30-black-effect-undead.webp)}
 @media (max-width:620px){.bzk-bp.n2{background-image:url(plates/b-P-ink-30-black-effect-undead.webp)}}
+.bzk-pet:nth-child(3){--pix:url(pix/45-albino-effect-stardust.png)}
 .bzk-pet:nth-child(3) > u{background-image:url(reveal/45-albino-effect-stardust-closed.webp)}
 .bzk-pet:nth-child(3) .bzk-sh{background-image:url(reveal/45-albino-effect-stardust.webp)}
 .bzk-pet:nth-child(3){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
@@ -136,6 +138,7 @@
 .bzk-pet:nth-child(3) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
 .bzk-bp.n3{background-image:url(plates/b-L-ink-45-albino-effect-stardust.webp)}
 @media (max-width:620px){.bzk-bp.n3{background-image:url(plates/b-P-ink-45-albino-effect-stardust.webp)}}
+.bzk-pet:nth-child(4){--pix:url(pix/71-albino-effect-derp.png)}
 .bzk-pet:nth-child(4) > u{background-image:url(reveal/71-albino-effect-derp-closed.webp)}
 .bzk-pet:nth-child(4) .bzk-sh{background-image:url(reveal/71-albino-effect-derp.webp)}
 .bzk-pet:nth-child(4){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
@@ -143,6 +146,7 @@
 .bzk-pet:nth-child(4) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
 .bzk-bp.n4{background-image:url(plates/b-L-ink-71-albino-effect-derp.webp)}
 @media (max-width:620px){.bzk-bp.n4{background-image:url(plates/b-P-ink-71-albino-effect-derp.webp)}}
+.bzk-pet:nth-child(5){--pix:url(pix/33-rainbow-effect-cosmic.png)}
 .bzk-pet:nth-child(5) > u{background-image:url(reveal/33-rainbow-effect-cosmic-closed.webp)}
 .bzk-pet:nth-child(5) .bzk-sh{background-image:url(reveal/33-rainbow-effect-cosmic.webp)}
 .bzk-pet:nth-child(5){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
@@ -150,6 +154,7 @@
 .bzk-pet:nth-child(5) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
 .bzk-bp.n5{background-image:url(plates/b-L-ink-33-rainbow-effect-cosmic.webp)}
 @media (max-width:620px){.bzk-bp.n5{background-image:url(plates/b-P-ink-33-rainbow-effect-cosmic.webp)}}
+.bzk-pet:nth-child(6){--pix:url(pix/37-albino-effect-frostlight.png)}
 .bzk-pet:nth-child(6) > u{background-image:url(reveal/37-albino-effect-frostlight-closed.webp)}
 .bzk-pet:nth-child(6) .bzk-sh{background-image:url(reveal/37-albino-effect-frostlight.webp)}
 .bzk-pet:nth-child(6){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
@@ -172,12 +177,12 @@
 @media (max-width:620px){.bzk-pa.f6:target ~ .bzk-stage{--lit:url(plates/b-P-lit-37-albino-effect-frostlight.webp)}}
 @media (max-width:620px){.bzk-stage{--lit:url(plates/b-P-lit-7-ginger-effect-derp-baby.webp)}}
 .bzk-fo{visibility:hidden;--run:none}
-.bzk-stage .bzk-pet:nth-child(1){display:block;--x:0px;--s:1.000}
-.bzk-stage .bzk-pet:nth-child(2){display:block;--x:200px;--s:0.580}
-.bzk-stage .bzk-pet:nth-child(3){display:block;--x:350px;--s:0.580}
-.bzk-stage .bzk-pet:nth-child(5){display:block;--x:-350px;--s:0.580}
-.bzk-stage .bzk-pet:nth-child(6){display:block;--x:-200px;--s:0.580}
-.bzk-stage .bzk-pet:nth-child(1){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
+.bzk-stage .bzk-pet:nth-child(1){display:block;--x:0px;--s:var(--fs)}
+.bzk-stage .bzk-pet:nth-child(2){display:block;--x:calc(var(--gap) * 1 + var(--step) * 0);--s:var(--near)}
+.bzk-stage .bzk-pet:nth-child(3){display:block;--x:calc(var(--gap) * 1 + var(--step) * 1);--s:var(--near)}
+.bzk-stage .bzk-pet:nth-child(5){display:block;--x:calc(var(--gap) * -1 + var(--step) * -1);--s:var(--near)}
+.bzk-stage .bzk-pet:nth-child(6){display:block;--x:calc(var(--gap) * -1 + var(--step) * 0);--s:var(--near)}
+.bzk-stage .bzk-pet:nth-child(1){--flt:none;--pixd:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-stage .bzk-pet:nth-child(1) > img{opacity:0}
 .bzk-stage .bzk-pet:nth-child(1) .bzk-win{display:block}
 .bzk-stage .n1{visibility:visible;--run:bzk-type}
@@ -185,77 +190,76 @@
 .bzk-stage{--trot:170.3;--tsat:1.86}
 .bzk-stage .bzk-pf{background-image:url(reveal/37-albino-effect-frostlight.webp),url(plates/b-L-ink-37-albino-effect-frostlight.webp),url(plates/b-L-lit-37-albino-effect-frostlight.webp),url(rooms/poster-water.webp),url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp)}
 .bzk-pa:target ~ .bzk-stage .bzk-pet{display:none;--flt:var(--tf);--hon:none;--rvx:none;--rvy:none}
-.bzk-pa:target ~ .bzk-stage .bzk-pet > img{opacity:1}
 .bzk-pa:target ~ .bzk-stage .bzk-win{display:none}
 .bzk-pa:target ~ .bzk-stage .bzk-fo{visibility:hidden;--run:none}
 .bzk-pa:target ~ .bzk-stage .bzk-bp{display:none}
 .bzk-pa:target ~ .bzk-stage .bzk-pf{background-image:none}
-.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:0px;--s:1.000}
-.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:200px;--s:0.580}
-.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:350px;--s:0.580}
-.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(1){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
+.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:0px;--s:var(--fs)}
+.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:calc(var(--gap) * 1 + var(--step) * 0);--s:var(--near)}
+.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:calc(var(--gap) * 1 + var(--step) * 1);--s:var(--near)}
+.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:calc(var(--gap) * -1 + var(--step) * -1);--s:var(--near)}
+.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:calc(var(--gap) * -1 + var(--step) * 0);--s:var(--near)}
+.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(1){--flt:none;--pixd:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(1) > img{opacity:0}
 .bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(1) .bzk-win{display:block}
 .bzk-pa.f1:target ~ .bzk-stage .n1{visibility:visible;--run:bzk-type}
 .bzk-pa.f1:target ~ .bzk-stage .bzk-bp.n1{display:block}
 .bzk-pa.f1:target ~ .bzk-stage{--trot:170.3;--tsat:1.86}
 .bzk-pa.f1:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/37-albino-effect-frostlight.webp),url(plates/b-L-ink-37-albino-effect-frostlight.webp),url(plates/b-L-lit-37-albino-effect-frostlight.webp),url(rooms/poster-water.webp),url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp)}
-.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:0px;--s:1.000}
-.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:200px;--s:0.580}
-.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:350px;--s:0.580}
-.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(2){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
+.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:calc(var(--gap) * -1 + var(--step) * 0);--s:var(--near)}
+.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:0px;--s:var(--fs)}
+.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:calc(var(--gap) * 1 + var(--step) * 0);--s:var(--near)}
+.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:calc(var(--gap) * 1 + var(--step) * 1);--s:var(--near)}
+.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:calc(var(--gap) * -1 + var(--step) * -1);--s:var(--near)}
+.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(2){--flt:none;--pixd:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(2) > img{opacity:0}
 .bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(2) .bzk-win{display:block}
 .bzk-pa.f2:target ~ .bzk-stage .n2{visibility:visible;--run:bzk-type}
 .bzk-pa.f2:target ~ .bzk-stage .bzk-bp.n2{display:block}
 .bzk-pa.f2:target ~ .bzk-stage{--trot:220.9;--tsat:1.86}
 .bzk-pa.f2:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/7-ginger-effect-derp-baby.webp),url(plates/b-L-ink-7-ginger-effect-derp-baby.webp),url(plates/b-L-lit-7-ginger-effect-derp-baby.webp),url(rooms/poster-sky.webp),url(reveal/45-albino-effect-stardust.webp),url(plates/b-L-ink-45-albino-effect-stardust.webp),url(plates/b-L-lit-45-albino-effect-stardust.webp),url(rooms/poster-geode.webp)}
-.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:0px;--s:1.000}
-.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:200px;--s:0.580}
-.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:350px;--s:0.580}
-.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(3){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
+.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:calc(var(--gap) * -1 + var(--step) * -1);--s:var(--near)}
+.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:calc(var(--gap) * -1 + var(--step) * 0);--s:var(--near)}
+.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:0px;--s:var(--fs)}
+.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:calc(var(--gap) * 1 + var(--step) * 0);--s:var(--near)}
+.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:calc(var(--gap) * 1 + var(--step) * 1);--s:var(--near)}
+.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(3){--flt:none;--pixd:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(3) > img{opacity:0}
 .bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(3) .bzk-win{display:block}
 .bzk-pa.f3:target ~ .bzk-stage .n3{visibility:visible;--run:bzk-type}
 .bzk-pa.f3:target ~ .bzk-stage .bzk-bp.n3{display:block}
 .bzk-pa.f3:target ~ .bzk-stage{--trot:267.6;--tsat:1.86}
 .bzk-pa.f3:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp),url(reveal/71-albino-effect-derp.webp),url(plates/b-L-ink-71-albino-effect-derp.webp),url(plates/b-L-lit-71-albino-effect-derp.webp),url(rooms/poster-garden.webp)}
-.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:0px;--s:1.000}
-.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:200px;--s:0.580}
-.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:350px;--s:0.580}
-.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(4){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
+.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:calc(var(--gap) * -1 + var(--step) * -1);--s:var(--near)}
+.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:calc(var(--gap) * -1 + var(--step) * 0);--s:var(--near)}
+.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:0px;--s:var(--fs)}
+.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:calc(var(--gap) * 1 + var(--step) * 0);--s:var(--near)}
+.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:calc(var(--gap) * 1 + var(--step) * 1);--s:var(--near)}
+.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(4){--flt:none;--pixd:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(4) > img{opacity:0}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(4) .bzk-win{display:block}
 .bzk-pa.f4:target ~ .bzk-stage .n4{visibility:visible;--run:bzk-type}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-bp.n4{display:block}
 .bzk-pa.f4:target ~ .bzk-stage{--trot:65.7;--tsat:1.86}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/45-albino-effect-stardust.webp),url(plates/b-L-ink-45-albino-effect-stardust.webp),url(plates/b-L-lit-45-albino-effect-stardust.webp),url(rooms/poster-geode.webp),url(reveal/33-rainbow-effect-cosmic.webp),url(plates/b-L-ink-33-rainbow-effect-cosmic.webp),url(plates/b-L-lit-33-rainbow-effect-cosmic.webp),url(rooms/poster-cathedral.webp)}
-.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:350px;--s:0.580}
-.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:0px;--s:1.000}
-.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:200px;--s:0.580}
-.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(5){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
+.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:calc(var(--gap) * 1 + var(--step) * 1);--s:var(--near)}
+.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:calc(var(--gap) * -1 + var(--step) * -1);--s:var(--near)}
+.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:calc(var(--gap) * -1 + var(--step) * 0);--s:var(--near)}
+.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:0px;--s:var(--fs)}
+.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:calc(var(--gap) * 1 + var(--step) * 0);--s:var(--near)}
+.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(5){--flt:none;--pixd:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(5) > img{opacity:0}
 .bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(5) .bzk-win{display:block}
 .bzk-pa.f5:target ~ .bzk-stage .n5{visibility:visible;--run:bzk-type}
 .bzk-pa.f5:target ~ .bzk-stage .bzk-bp.n5{display:block}
 .bzk-pa.f5:target ~ .bzk-stage{--trot:-6.3;--tsat:1.86}
 .bzk-pa.f5:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/71-albino-effect-derp.webp),url(plates/b-L-ink-71-albino-effect-derp.webp),url(plates/b-L-lit-71-albino-effect-derp.webp),url(rooms/poster-garden.webp),url(reveal/37-albino-effect-frostlight.webp),url(plates/b-L-ink-37-albino-effect-frostlight.webp),url(plates/b-L-lit-37-albino-effect-frostlight.webp),url(rooms/poster-water.webp)}
-.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:200px;--s:0.580}
-.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:350px;--s:0.580}
-.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:0px;--s:1.000}
-.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(6){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
+.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:calc(var(--gap) * 1 + var(--step) * 0);--s:var(--near)}
+.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:calc(var(--gap) * 1 + var(--step) * 1);--s:var(--near)}
+.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:calc(var(--gap) * -1 + var(--step) * -1);--s:var(--near)}
+.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:calc(var(--gap) * -1 + var(--step) * 0);--s:var(--near)}
+.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:0px;--s:var(--fs)}
+.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(6){--flt:none;--pixd:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(6) > img{opacity:0}
 .bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(6) .bzk-win{display:block}
 .bzk-pa.f6:target ~ .bzk-stage .n6{visibility:visible;--run:bzk-type}
@@ -264,9 +268,10 @@
 .bzk-pa.f6:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/33-rainbow-effect-cosmic.webp),url(plates/b-L-ink-33-rainbow-effect-cosmic.webp),url(plates/b-L-lit-33-rainbow-effect-cosmic.webp),url(rooms/poster-cathedral.webp),url(reveal/7-ginger-effect-derp-baby.webp),url(plates/b-L-ink-7-ginger-effect-derp-baby.webp),url(plates/b-L-lit-7-ginger-effect-derp-baby.webp),url(rooms/poster-sky.webp)}
 .bzk-stage .bzk-pet{--rvd:var(--boot)}
 .bzk-pa:target ~ .bzk-stage .bzk-pet{--rvd:0s}
-@media (max-width:620px){#my-overlay{--gap:124px;--step:74px;--near:.42;--cy:40%;--bbot:16px;--bw0:399px;--bh0:130px;--bs:.88}.bzk-nm b{font-size:21px}.bzk-nm i{width:9px;height:15px}}
-@media (max-width:374px){#my-overlay{--gap:104px;--step:64px;--bs:.78}}
-@media (min-width:621px) and (max-width:1100px){#my-overlay{--gap:150px;--step:104px;--near:.50}}
-@media (min-width:1101px) and (max-width:1320px){#my-overlay{--gap:174px;--step:126px;--near:.54}}
+@media (max-height:800px) and (min-width:621px){#my-overlay{--cy:39%}}
+@media (max-width:620px){#my-overlay{--focus:220px;--fs:1.100;--gap:168px;--step:72px;--near:.32;--cy:40%;--nmz:1.26;--bbot:16px;--bw0:399px;--bh0:130px;--bs:.88}}
+@media (max-width:374px){#my-overlay{--focus:200px;--fs:1.000;--gap:148px;--step:64px;--near:.30;--bs:.78}}
+@media (min-width:621px) and (max-width:1100px){#my-overlay{--focus:216px;--fs:1.080;--gap:200px;--step:98px;--near:.40}}
+@media (min-width:1101px) and (max-width:1320px){#my-overlay{--focus:236px;--fs:1.180;--gap:244px;--step:120px;--near:.46}}
 @media (min-width:621px){#my-overlay{--bs:1}}
 @media (prefers-reduced-motion:reduce){#my-overlay *,#my-overlay *::before,#my-overlay *::after{animation:none !important;transition:none !important}#bzk-boot{opacity:0;visibility:hidden}.bzk-pet > img{opacity:1 !important}.bzk-win{display:none !important}#my-overlay .bzk-rm > video{display:none !important}}

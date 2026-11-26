@@ -58,20 +58,49 @@ DIM = "#677c78"
 LINE = "#28373c"
 TINT = "#9fd8bd"
 ACCENT = "#ff4b2b"
+EDGE = "#93a8a2"   # the ASCII name's edge cells: --text, stepped back
 
-# ---- the row, as three numbers and nothing else --------------------------
-FOCUS = 200       # the focused pet, and the pet art's own size: never upscaled
-GAP = 200         # clear wall either side of the focused pet
-STEP = 150        # distance between neighbours beyond that
-NEAR = 0.58       # a neighbour's scale
+# ---- the row, as four numbers and nothing else ---------------------------
+# ART stays 200: the pet art is 200 px and the BOX is never resized. The
+# focused pet is made bigger with transform:scale(var(--fs)) instead, which
+# is the compositor's job and not the layout's. FOCUS is that scaled size in
+# pixels and is only used to place the name under the art.
+ART = 200         # the pet box, and the pet art's own size
+FSCALE = 1.28     # the focused pet's scale: 200 -> 256
+FOCUS = 256       # ART * FSCALE, for the name's offset
+GAP = 290         # focus centre -> first neighbour centre
+STEP = 140        # distance between neighbours beyond that
+NEAR = 0.50       # a neighbour's scale
 WINDOW = 3        # pets this far from the focus are drawn; the rest are none
+# MEASURED at 1440: the clear wall either side of the focused pet is
+# 290 - 128 - 50 = 112 px and the wall between two neighbours is
+# 140 - 100 = 40 px, so the centre reads 2.8x more set apart than the rest.
 
 SLIDE = ".34s"    # the row's move
 FADE = ".5s"      # the room crossfade
 BOOT = ".18s"     # LOADING hold before its .3s fade
 
-TYPE_CPS = 34.0
-MAX_NAME = 20
+# ---- the unfocused pet's pixel preview ----------------------------------- #
+# A PIX_N x PIX_N nearest-neighbour block of the pet, built here for every
+# pet in the pets file and shown with image-rendering:pixelated. At the
+# neighbour's 100 px a 16-cell grid is a 6 px block; 20 cells was too fine
+# to read as blocks at this size.
+PIX_DIR = "pix/"
+PIX_N = 16
+PIX_CUT = 90      # alpha at or over this is solid, under it is gone
+
+# ---- the name, as build-time ASCII art ----------------------------------- #
+# The name is rasterised in UnifrakturCook 700 and sampled onto a character
+# grid; the art lives in the STYLESHEET as content:"...", so the paste
+# carries one empty span per pet and the glyphs stay crisp at any density.
+NAME_ROWS = 12
+NAME_RAMP = " .:-=+*#&@"
+NAME_AR = 0.6     # IBM Plex Mono's advance (0.6em) over its line-height (1em)
+NAME_GAMMA = 0.60
+NAME_FLOOR = 0.08
+NAME_WIDE = 0.70  # a name is at most this much of the viewport
+NAME_HEAVY = 4    # ramp index at which a cell moves to the bright layer
+NAME_FONT = "fonts/unifrakturcook-latin-700-normal.woff2"
 
 # the kind's four-stop ramp, as in the heavy build (hue, lightness, sat mult)
 ENV = {
@@ -356,6 +385,146 @@ def attach_reveal(pets, warn):
 
 
 # --------------------------------------------------------------------------- #
+# the unfocused pet's pixel preview                                           #
+# --------------------------------------------------------------------------- #
+
+def make_pixels(pets, warn):
+    """pix/KEY.png: the pet, area-averaged onto a PIX_N grid with a hard
+    alpha cut, so it is a block of flat cells and not a small photo. Built
+    for every pet in the pets file, two to three KB each, and preloaded
+    whole because at that size the six of them are one small request."""
+    for p in pets:
+        p["pix"] = None
+    try:
+        from PIL import Image
+        import numpy as np
+    except Exception as exc:
+        warn.append("no Pillow/numpy - unfocused pets keep the closed frame (%s)"
+                    % exc)
+        return
+    out = os.path.join(HERE, PIX_DIR)
+    os.makedirs(out, exist_ok=True)
+    done = {}
+    for p in pets:
+        k = p["key"]
+        if k in done:
+            p["pix"] = done[k]
+            continue
+        src = os.path.join(HERE, p["rel"])
+        if not os.path.isfile(src):
+            warn.append("no local copy of %s - no pixel preview" % k)
+            done[k] = None
+            continue
+        a = np.asarray(Image.open(src).convert("RGBA"), dtype=np.float64)
+        # PREMULTIPLY BEFORE THE DOWNSAMPLE. A transparent pixel still
+        # carries an RGB, usually black, and averaging it in draws a dark
+        # rim around every cell on the silhouette's edge.
+        al = a[..., 3:4] / 255.0
+        pre = np.concatenate([a[..., :3] * al, a[..., 3:4]], axis=2)
+        sm = np.asarray(Image.fromarray(np.uint8(np.round(pre)), "RGBA")
+                        .resize((PIX_N, PIX_N), Image.BOX), dtype=np.float64)
+        aa = sm[..., 3:4] / 255.0
+        rgb = np.clip(np.where(aa > 0, sm[..., :3] / np.maximum(aa, 1e-6), 0),
+                      0, 255)
+        hard = np.where(sm[..., 3:4] >= PIX_CUT, 255.0, 0.0)
+        res = np.uint8(np.round(np.concatenate([rgb, hard], axis=2)))
+        rel = PIX_DIR + k + ".png"
+        Image.fromarray(res, "RGBA").save(os.path.join(out, rel.split("/")[-1]),
+                                          "PNG", optimize=True)
+        done[k] = rel
+    for p in pets:
+        p["pix"] = done.get(p["key"])
+
+
+# --------------------------------------------------------------------------- #
+# the name, as ASCII art                                                      #
+# --------------------------------------------------------------------------- #
+
+def _name_font(warn):
+    """UnifrakturCook as a TTF Pillow will open. The repo ships the woff2
+    the page itself uses; fontTools unwraps it to a temporary file so no
+    second copy of the font is ever committed or uploaded."""
+    src = os.path.join(HERE, NAME_FONT)
+    if not os.path.isfile(src):
+        warn.append("no %s - the names have no ASCII art" % NAME_FONT)
+        return None
+    try:
+        import tempfile
+        from fontTools.ttLib import TTFont
+        f = TTFont(src)
+        f.flavor = None
+        tmp = tempfile.NamedTemporaryFile(suffix=".ttf", delete=False)
+        tmp.close()
+        f.save(tmp.name)
+        return tmp.name
+    except Exception as exc:
+        warn.append("woff2 -> ttf failed (%s: %s) - the names have no ASCII art"
+                    % (type(exc).__name__, exc))
+        return None
+
+
+def name_art(text, ttf):
+    """(heavy rows, light rows, columns). Two layers of the same grid: the
+    dense cells and the edge cells, so the page can put a dimmer colour on
+    the edges with a second pseudo-element and no second element."""
+    from PIL import Image, ImageDraw, ImageFont
+    px = 360
+    font = ImageFont.truetype(ttf, px)
+    im = Image.new("L", (px * max(1, len(text)) + 400, px * 3), 0)
+    ImageDraw.Draw(im).text((200, px), text, font=font, fill=255, anchor="ls")
+    bb = im.getbbox()
+    if not bb:
+        return [], [], 0
+    im = im.crop(bb)
+    w, h = im.size
+    cell_h = h / float(NAME_ROWS)
+    cols = max(1, int(round(w / (cell_h * NAME_AR))))
+    small = im.resize((cols, NAME_ROWS), Image.BOX)
+    top = len(NAME_RAMP) - 1
+    heavy, light = [], []
+    for y in range(NAME_ROWS):
+        hr, lr = [], []
+        for x in range(cols):
+            c = small.getpixel((x, y)) / 255.0
+            i = 0 if c < NAME_FLOOR else max(
+                1, min(top, int(round((c ** NAME_GAMMA) * top))))
+            ch = NAME_RAMP[i]
+            hr.append(ch if i >= NAME_HEAVY else " ")
+            lr.append(ch if 0 < i < NAME_HEAVY else " ")
+        # THE ROWS ARE PADDED, NEVER TRIMMED. Both layers are centred as a
+        # block, so a short row would shift that block and the two layers
+        # would stop sitting on top of one another.
+        heavy.append("".join(hr))
+        light.append("".join(lr))
+    return heavy, light, cols
+
+
+def css_str(rows):
+    """One CSS string, rows joined by a newline. \\00000a and not \\A: a
+    six-digit escape does not eat the space that starts the next row."""
+    out = []
+    for r in rows:
+        out.append(r.replace("\\", "\\\\").replace('"', '\\"'))
+    return "\\00000a".join(out)
+
+
+def attach_names(pets, warn):
+    ttf = _name_font(warn)
+    cache = {}
+    for p in pets:
+        p["art"] = None
+        if not ttf:
+            continue
+        if p["name"] not in cache:
+            try:
+                cache[p["name"]] = name_art(p["name"], ttf)
+            except Exception as exc:
+                warn.append("ASCII art failed for %r (%s)" % (p["name"], exc))
+                cache[p["name"]] = None
+        p["art"] = cache[p["name"]]
+
+
+# --------------------------------------------------------------------------- #
 # the stylesheet                                                              #
 # --------------------------------------------------------------------------- #
 
@@ -472,14 +641,15 @@ def build_css(pets, man, rooms, order):
 
     a("#my-overlay{--ink:%s;--text:%s;--dim:%s;--line:%s;--tint:%s;--accent:%s;"
       "--mono:\"BZKMono\",ui-monospace,monospace;--black:\"BZKBlack\",serif;"
-      "--focus:%dpx;--sz:%dpx;--gap:%dpx;--step:%dpx;--near:%.3f;--cy:44%%;"
+      "--focus:%dpx;--sz:%dpx;--fs:%.3f;--gap:%dpx;--step:%dpx;--near:%.3f;"
+      "--cy:44%%;--nmz:1;"
       "--slide:%s;--fade:%s;--boot:%s;--bbot:26px;--bpad:16px;--bs:.78;"
       "position:fixed;top:0;left:0;width:100vw;height:100vh;"
       "z-index:999999999;background:var(--ink);overflow:hidden;"
       "font-family:var(--mono);color:var(--text);"
       "-webkit-font-smoothing:antialiased}"
-      % (INK, TEXT, DIM, LINE, TINT, ACCENT, FOCUS, FOCUS, GAP, STEP, NEAR,
-         SLIDE, FADE, BOOT))
+      % (INK, TEXT, DIM, LINE, TINT, ACCENT, FOCUS, ART, FSCALE, GAP, STEP,
+         NEAR, SLIDE, FADE, BOOT))
     a("#my-overlay *{box-sizing:border-box;margin:0;padding:0;border:0}")
     # the LOADING gate the inline style put up, taken down from here
     a("#bzk-boot{z-index:60;animation:bzk-off .3s linear var(--boot) forwards}")
@@ -540,6 +710,21 @@ def build_css(pets, man, rooms, order):
       "top:0;left:0;width:var(--sz);height:var(--sz);display:block}")
     a(".bzk-closed{z-index:2;background-size:100% 100%;"
       "background-repeat:no-repeat;image-rendering:pixelated}")
+    # ======================================================================= #
+    # REPLACEABLE SECTION: THE UNFOCUSED PET'S PIXEL PREVIEW                  #
+    # Billy: "the non selected pet should be a pixel preview". pix/KEY.png is
+    # a PIX_N-cell block of the pet, drawn on a pseudo-element of the closed
+    # frame so the paste gains no element and loses no character. The
+    # focused pet sets --pixd:none in its focus rule, which is a variable it
+    # already sets, so there is not one extra rule per state either. The
+    # layer sits inside .bzk-closed and therefore wears the room's tint
+    # filter with it.
+    # ======================================================================= #
+    a('.bzk-closed::before{content:"";position:absolute;inset:0;'
+      "display:var(--pixd,block);background-image:var(--pix,none);"
+      "background-size:100% 100%;background-repeat:no-repeat;"
+      "image-rendering:pixelated}")
+    # ============= end REPLACEABLE: THE UNFOCUSED PET'S PIXEL ============== #
     # the reveal: two nested transform steppers, rows outside, columns in
     a(".bzk-win{z-index:3;overflow:hidden;display:none}")
     a(".bzk-sr{position:absolute;top:0;left:0;width:var(--sz);"
@@ -557,7 +742,10 @@ def build_css(pets, man, rooms, order):
     a("@keyframes bzk-rvy{from{transform:translateY(0)}"
       "to{transform:translateY(var(--rye))}}")
     # the site's own PNG takes over when the reveal finishes
-    a(".bzk-img{z-index:4;opacity:1;animation-name:var(--hon,none);"
+    # THE REAL IMAGE IS OFF UNTIL THE PET IS FOCUSED. An unfocused pet is
+    # its pixel block; the handoff below fades the site's own PNG in when
+    # the reveal finishes.
+    a(".bzk-img{z-index:4;opacity:0;animation-name:var(--hon,none);"
       "animation-duration:.15s;animation-timing-function:linear;"
       "animation-delay:calc(var(--rvd,0s) + var(--T,0s));"
       "animation-fill-mode:forwards}")
@@ -583,27 +771,39 @@ def build_css(pets, man, rooms, order):
 
     # ======================================================================= #
     # REPLACEABLE SECTION: THE NAME                                           #
-    # One element per pet carrying "bzk-fo nI", --run set to a name while     #
-    # focused and none otherwise, so a move restarts the typing. Nothing      #
-    # else in the file refers to .bzk-names, .bzk-nm or bzk-type.             #
+    # Billy: "the name of the pet should be an ascii style thing ... the      #
+    # gothic font in a more built ascii style made out of & and such".        #
+    # The art is rasterised at build time from UnifrakturCook 700 and lives   #
+    # HERE, as content:"..." on two pseudo-elements of an EMPTY span: the     #
+    # dense cells in --text, the edge cells in a dimmer tone behind them.     #
+    # The paste therefore carries no letters at all, and the plain name       #
+    # stays on the pet's img alt for a screen reader.                         #
+    # --nmk is the per-name vw coefficient: cols * .6em * font-size is        #
+    # NAME_WIDE of the viewport. The 1.2vh term keeps a wide, short window    #
+    # (1280x720, 1920x720) from pushing the block onto the bar.               #
     # ======================================================================= #
     a(".bzk-names{position:absolute;left:0;right:0;"
-      "top:calc(var(--cy) + var(--focus) / 2 + 18px);height:34px;z-index:9;"
-      "text-align:center}")
-    a(".bzk-nm{position:absolute;left:0;right:0;top:0;white-space:nowrap}")
-    a(".bzk-nm b{font-family:var(--black);font-weight:700;font-size:27px;"
-      "line-height:1.2;color:var(--text);letter-spacing:.02em;"
-      "text-shadow:0 0 10px rgba(0,0,0,.85);"
-      "animation-name:var(--run,none);animation-duration:var(--at,0s);"
-      "animation-timing-function:linear}")
-    a("@keyframes bzk-type{from,to{opacity:0}}")
-    a(".bzk-nm i{display:inline-block;width:12px;height:19px;margin-left:3px;"
-      "background:var(--tint);vertical-align:-2px;font-style:normal;"
-      "animation:bzk-blink 2s steps(1,end) infinite}")
-    a("@keyframes bzk-blink{0%,49.9%{opacity:1}50%,100%{opacity:0}}")
-    for i in range(1, MAX_NAME + 1):
-        a(".bzk-nm b:nth-child(%d){--k:%d}" % (i, i - 1))
-    a(".bzk-nm b{--at:calc(.26s + var(--k,0) * %.4fs)}" % (1.0 / TYPE_CPS))
+      "top:calc(var(--cy) + var(--focus) / 2 + 12px);height:0;z-index:9}")
+    a(".bzk-nm{position:absolute;left:0;right:0;top:0;height:0}")
+    a(".bzk-nm::before,.bzk-nm::after{position:absolute;left:50%;top:0;"
+      "transform:translateX(-50%);white-space:pre;text-align:left;"
+      "font-family:var(--mono);font-weight:400;line-height:1;"
+      "font-size:min(calc(var(--nmk,1) * var(--nmz,1) * 1vw),1.45vh,15px);"
+      "text-shadow:0 0 3px rgba(5,7,10,.95),0 1px 2px rgba(5,7,10,.95);"
+      "animation-name:var(--run,none);animation-duration:.4s;"
+      "animation-timing-function:linear;animation-fill-mode:both}")
+    a(".bzk-nm::before{z-index:2;color:var(--text)}")
+    a(".bzk-nm::after{z-index:1;color:%s}" % EDGE)
+    a("@keyframes bzk-type{from{opacity:0}to{opacity:1}}")
+    for i, p in enumerate(pets, 1):
+        art = p.get("art")
+        if not art or not art[2]:
+            continue
+        heavy, light, cols = art
+        k = NAME_WIDE * 100.0 / (cols * NAME_AR)
+        a(".bzk-nm.n%d{--nmk:%.4f}" % (i, k))
+        a('.bzk-nm.n%d::before{content:"%s"}' % (i, css_str(heavy)))
+        a('.bzk-nm.n%d::after{content:"%s"}' % (i, css_str(light)))
     # ========================= end REPLACEABLE: THE NAME =================== #
 
     bar_css(a, man)
@@ -616,10 +816,24 @@ def build_css(pets, man, rooms, order):
     a(".bzk-pf{position:absolute;left:0;top:0;width:1px;height:1px;"
       "opacity:0;z-index:0;pointer-events:none;background-repeat:no-repeat;"
       "background-size:1px 1px}")
+    # EVERY PIXEL PREVIEW AT ONCE, on the same element's pseudo. They are a
+    # couple of KB each and a pet walks into the window with no state of its
+    # own to prefetch from, so the whole set is asked for on the first paint
+    # and a pet never slides in as an empty box.
+    pixu = []
+    for p in pets:
+        if p.get("pix") and p["pix"] not in pixu:
+            pixu.append(p["pix"])
+    if pixu:
+        a('.bzk-pf::before{content:"";position:absolute;inset:0;'
+          "background-repeat:no-repeat;background-size:1px 1px;"
+          "background-image:%s}" % ",".join("url(%s)" % u for u in pixu))
 
     # ---- per-pet wiring ---------------------------------------------------- #
     for i, p in enumerate(pets, 1):
         sel = ".bzk-pet:nth-child(%d)" % i
+        if p.get("pix"):
+            a("%s{--pix:url(%s)}" % (sel, p["pix"]))
         r = p.get("rev")
         if r:
             a("%s > u{background-image:url(%s)}" % (sel, r["closed"]))
@@ -675,13 +889,20 @@ def build_css(pets, man, rooms, order):
             if abs(d) > w:
                 continue
             if d == 0:
-                x, sc = 0, 1.0
-            else:
-                x = (1 if d > 0 else -1) * (GAP + (abs(d) - 1) * STEP)
-                sc = NEAR
-            a("%s .bzk-pet:nth-child(%d){display:block;--x:%dpx;--s:%.3f}"
-              % (sel, i, x, sc))
-        a("%s .bzk-pet:nth-child(%d){--flt:none;--hon:bzk-hand;"
+                # THE CENTRE GROWS WITH transform AND NOTHING ELSE. --fs is
+                # per breakpoint, the box stays ART px, and the move is
+                # still one compositor job.
+                a("%s .bzk-pet:nth-child(%d){display:block;--x:0px;"
+                  "--s:var(--fs)}" % (sel, i))
+                continue
+            # AND THE NEIGHBOURS READ --gap/--step/--near. They used to be
+            # baked in as pixels here, which is why every breakpoint below
+            # set three variables that nothing ever looked at.
+            a("%s .bzk-pet:nth-child(%d){display:block;--x:calc(var(--gap) "
+              "* %d + var(--step) * %d);--s:var(--near)}"
+              % (sel, i, 1 if d > 0 else -1,
+                 (1 if d > 0 else -1) * (abs(d) - 1)))
+        a("%s .bzk-pet:nth-child(%d){--flt:none;--pixd:none;--hon:bzk-hand;"
           "--rvx:bzk-rvx;--rvy:bzk-rvy}" % (sel, f))
         a("%s .bzk-pet:nth-child(%d) > img{opacity:0}" % (sel, f))
         a("%s .bzk-pet:nth-child(%d) .bzk-win{display:block}" % (sel, f))
@@ -715,7 +936,6 @@ def build_css(pets, man, rooms, order):
     focusrules(".bzk-stage", 1)
     a(".bzk-pa:target ~ .bzk-stage .bzk-pet{display:none;--flt:var(--tf);"
       "--hon:none;--rvx:none;--rvy:none}")
-    a(".bzk-pa:target ~ .bzk-stage .bzk-pet > img{opacity:1}")
     a(".bzk-pa:target ~ .bzk-stage .bzk-win{display:none}")
     a(".bzk-pa:target ~ .bzk-stage .bzk-fo{visibility:hidden;--run:none}")
     a(".bzk-pa:target ~ .bzk-stage .bzk-bp{display:none}")
@@ -732,14 +952,22 @@ def build_css(pets, man, rooms, order):
     # peek in from the edges. The loop is landscape and object-fit:cover
     # crops it to the phone's frame, which is why there is no portrait
     # capture and no second set of megabytes on the worst connection.
-    a("@media (max-width:620px){#my-overlay{--gap:124px;--step:74px;"
-      "--near:.42;--cy:40%;--bbot:16px;--bw0:399px;--bh0:130px;--bs:.88}"
-      ".bzk-nm b{font-size:21px}.bzk-nm i{width:9px;height:15px}}")
-    a("@media (max-width:374px){#my-overlay{--gap:104px;--step:64px;--bs:.78}}")
+    # A SHORT WINDOW LIFTS THE WHOLE ROW. At 1280x720 and 1920x720 the
+    # name block at 44% would end on the bar; 39% gives it the 120 px it
+    # needs and the row still clears the top.
+    a("@media (max-height:800px) and (min-width:621px){#my-overlay{--cy:39%}}")
+    a("@media (max-width:620px){#my-overlay{--focus:220px;--fs:1.100;"
+      "--gap:168px;--step:72px;"
+      "--near:.32;--cy:40%;--nmz:1.26;--bbot:16px;--bw0:399px;--bh0:130px;"
+      "--bs:.88}}")
+    a("@media (max-width:374px){#my-overlay{--focus:200px;--fs:1.000;"
+      "--gap:148px;--step:64px;--near:.30;--bs:.78}}")
     a("@media (min-width:621px) and (max-width:1100px){"
-      "#my-overlay{--gap:150px;--step:104px;--near:.50}}")
+      "#my-overlay{--focus:216px;--fs:1.080;--gap:200px;--step:98px;"
+      "--near:.40}}")
     a("@media (min-width:1101px) and (max-width:1320px){"
-      "#my-overlay{--gap:174px;--step:126px;--near:.54}}")
+      "#my-overlay{--focus:236px;--fs:1.180;--gap:244px;--step:120px;"
+      "--near:.46}}")
     a("@media (min-width:621px){#my-overlay{--bs:1}}")
 
     # ---- reduced motion --------------------------------------------------- #
@@ -773,10 +1001,12 @@ OVERLAY_STYLE = ("position:fixed;top:0;left:0;width:100vw;height:100vh;"
 
 
 def names_html(pets):
+    """ONE EMPTY SPAN PER PET. The letters are ASCII art in the stylesheet
+    now, which is why there is no per-letter <b> here any more; the plain
+    name a screen reader needs is on the pet's img alt."""
     o = ['<div class="bzk-names">']
-    for i, p in enumerate(pets, 1):
-        letters = "".join("<b>%s</b>" % esc(c) for c in p["name"][:MAX_NAME])
-        o.append('<span class="bzk-nm bzk-fo n%d">%s<i></i></span>' % (i, letters))
+    for i in range(1, len(pets) + 1):
+        o.append('<span class="bzk-nm bzk-fo n%d"></span>' % i)
     o.append("</div>")
     return "".join(o)
 
@@ -955,6 +1185,8 @@ def main(argv=None):
     if not pets:
         sys.exit("no pets")
     attach_reveal(pets, warn)
+    make_pixels(pets, warn)
+    attach_names(pets, warn)
     man = read_plates(warn)
     attach_plates(pets, man, warn)
     rooms = read_rooms(warn)
