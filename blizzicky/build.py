@@ -39,6 +39,18 @@ CDN_REPO = "https://cdn.jsdelivr.net/gh/BillyTheArtist/rescreatu-images"
 CDN_DIR = "/blizzicky/"
 REF = "main"              # --ref REF
 
+# ======================================================================= #
+# THE ROOMS THAT ARE ALIVE                                                #
+# A room in here ships a looping capture of the renderer on top of its    #
+# three still moments. Stage 1 is a proof on two rooms; the stills stay   #
+# underneath every room, so a room that is not in this set simply looks   #
+# the way it did.                                                         #
+# ======================================================================= #
+VIDROOMS = {2, 3}
+
+# How many pets' reveal sheets are asked for on the first paint.
+PRELOAD_N = 12
+
 
 def cdn_base(ref=None):
     return CDN_REPO + "@" + (ref or REF) + CDN_DIR
@@ -355,9 +367,66 @@ MASK_TILE = ("url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'
              "%3C/g%3E%3C/svg%3E\")")
 
 
+def pet_ramp(p):
+    """THE RAMP THE ROOM IS ACTUALLY LIT WITH, for this pet.
+
+    Pet i's wall was captured with `g=i&genv=1`, so the room on it is piece
+    i's environment, and bake-work/envramp.py reads that piece's own ramp
+    straight out of the renderer (`window.__env(n).params.ramp`): the
+    kind's base hue already pulled toward the piece's dominant saturated
+    hue with the renderer's 0.40 saturation floor. It is in the plates
+    manifest. The `kind` written by hand in pets.txt is only a fallback,
+    and it does not always agree - the manifest says pet 1 is cathedral
+    where pets.txt says sky - so the captured truth wins.
+    """
+    e = p.get("plate") or {}
+    r = e.get("ramp")
+    if r and len(r) >= 4:
+        return r
+    return ramp(p["kind"])
+
+
+def hue_sat(hexcol):
+    """A colour's hue in degrees and its HLS saturation."""
+    v = hexcol.lstrip("#")
+    r, g, b = (int(v[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
+    h, l, sat = colorsys.rgb_to_hls(r, g, b)
+    return h * 360.0, sat, l
+
+
+# grayscale(1) sepia(1) turns any grey into one colour: the matrix sends
+# (v,v,v) to (1.351v, 1.203v, 0.937v), which is hue 38.5 degrees at HLS
+# saturation 0.242. So to land a wanted hue the chain only has to turn the
+# wheel by the difference and multiply the saturation up from 0.242.
+SEPIA_HUE, SEPIA_SAT = 38.5, 0.242
+
+
+def env_air(hexcol, lum=0.13, sat_cap=0.45):
+    """The room's air: the ramp's hue, taken down to air luminance."""
+    h, sat, _ = hue_sat(hexcol)
+    r, g, b = colorsys.hls_to_rgb(h / 360.0, lum, min(sat, sat_cap))
+    return "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))
+
+
+def tint_filter(hexcol, sat_cap=0.45, bright=0.82, contrast=0.88):
+    """The filter chain that puts a greyscale pet into one colour.
+
+    The cap is measured, not guessed. A neighbour is not only tinted: it
+    also stands behind the 0.6 scrim of the room's darkest stop, and the
+    two add up. At sat_cap 0.62 (the ramp's own saturation) a neighbour in
+    the water room measured HLS saturation 0.33-0.39 on screen, which
+    reads as neon, not as desaturated. 0.34 lands it near 0.20, muted and
+    plainly the room's colour. The hue it lands on is the mix of the mid
+    stop and the scrim, a little short of the mid stop itself.
+    """
+    h, sat, _ = hue_sat(hexcol)
+    sat = min(sat, sat_cap)
+    return (round(h - SEPIA_HUE, 1), round(sat / SEPIA_SAT, 3), bright, contrast)
+
+
 def ramp(kind):
-    """The kind's four-stop ramp. Only the darkest stop is still used: it is
-    the scrim a neighbour stands behind so it sinks into the wall."""
+    """The kind's four-stop ramp. The fallback when a pet has no captured
+    ramp in the manifest: see pet_ramp()."""
     hue, ls, sm = ENV[kind]
     out = []
     for l in ls:
@@ -668,6 +737,9 @@ def build_css(pets, man, fx=None):
       'font-display:block;src:url(fonts/unifrakturcook-latin-700-normal.woff2) format("woff2")}')
 
     a("@property --rev{syntax:'<percentage>';inherits:true;initial-value:100%}")
+    # registered, so they interpolate: an unregistered custom property jumps
+    a("@property --trot{syntax:'<angle>';inherits:true;initial-value:0deg}")
+    a("@property --tsat{syntax:'<number>';inherits:true;initial-value:1.8}")
     a("@property --sw{syntax:'<percentage>';inherits:true;initial-value:130%}")
 
     # ---- host page ---------------------------------------------------------
@@ -726,11 +798,27 @@ def build_css(pets, man, fx=None):
       "--lp:18%;--n:" + str(n) + "}")
 
     # The kind classes carried the whole live scene machinery. One thing is
-    # left for them: --envdark, the darkest stop of the room's ramp, which is
-    # the scrim a neighbour stands behind so it sinks into the wall.
-    a(".bzk-stage.k-%s{--envdark:%s}" % (pets[0]["kind"], ramp(pets[0]["kind"])[0]))
+    # left for them: --envdark, the scrim a neighbour stands behind so it
+    # sinks into the wall. In the portfolio that scrim is PAL.clear, the
+    # room's AIR, and the ramp's darkest stop is not that: in the water
+    # ramp it is #418c1c, bright grass. Painted at 0.6 over a pet it was
+    # supplying most of the colour on screen and the neighbours read as
+    # neon blobs. env_air() takes the ramp's hue down to the air's own
+    # luminance instead, so the scrim sinks the pet and the colour comes
+    # from the tint, where it can be controlled.
+    # the room's own colour for the tint: the ramp's saturated mid stop,
+    # which is what the renderer lights a glyph in
+    def tintvars(p):
+        rot, sat, bri, con = tint_filter(pet_ramp(p)[1])
+        return "--trot:%gdeg;--tsat:%g;--tbri:%g;--tcon:%g" % (rot, sat, bri, con)
+    a(".bzk-stage.k-%s{--envdark:%s;%s}"
+      % (pets[0]["kind"], env_air(pet_ramp(pets[0])[0]), tintvars(pets[0])))
+    # the hue travels with the wall, over the morph's own 1.4 s
+    a(".bzk-stage{transition:--trot var(--mdur,1.4s) linear,"
+      "--tsat var(--mdur,1.4s) linear}")
     for i, p in enumerate(pets, 1):
-        a(".bzk-pa.f%d:target ~ .bzk-stage{--envdark:%s}" % (i, ramp(p["kind"])[0]))
+        a(".bzk-pa.f%d:target ~ .bzk-stage{--envdark:%s;%s}"
+          % (i, env_air(pet_ramp(p)[0]), tintvars(p)))
 
     # ======================================================================= #
     # THE WALL                                                               #
@@ -776,6 +864,33 @@ def build_css(pets, man, fx=None):
     a(".bzk-wg > u,.bzk-wg > i{left:50%;top:50%;"
       "width:var(--pw);height:var(--ph);"
       "margin-left:calc(var(--pw) / -2);margin-top:calc(var(--ph) / -2)}")
+    # ======================================================================= #
+    # REPLACEABLE SECTION: THE LIVE ROOM                                      #
+    # The loop sits in the same box as the still plate, at the SAME native    #
+    # size - one captured pixel to one CSS pixel - so the glyph cell is still #
+    # 7 x 13 on screen. object-fit:cover would fit the loop to the window and #
+    # scale it, and a scaled 7 x 13 cell stops reading as a character, which  #
+    # is the whole point of the wall. The stills stay under it, so the room   #
+    # is right from the first paint and the video only takes over when it is  #
+    # decoding. Nothing here animates: the element never moves and never      #
+    # changes size, so the compositor just shows its frames.                  #
+    # ======================================================================= #
+    a(".bzk-wg > video{position:absolute;left:50%;top:50%;z-index:1;"
+      "width:var(--pw);height:var(--ph);"
+      "margin-left:calc(var(--pw) / -2);margin-top:calc(var(--ph) / -2);"
+      "object-fit:none;pointer-events:none;display:none}")
+    # MEASURED, 2026-11-25: a muted autoplay video drawn at opacity 0 is
+    # still downloaded in full and still decoded - two hidden loops pulled
+    # 3.04 MB each and decoded 221 frames before either was ever on screen.
+    # `preload` is not in the set the site's filter has been shown to pass,
+    # so the only lever left in CSS is display, and display:none is the one
+    # the browser honours. Only the room you are standing in is alive; the
+    # rest are the stills they always were.
+    a(".bzk-stage .bzk-wg.n1 > video{display:block}")
+    a(".bzk-pa:target ~ .bzk-stage .bzk-wg > video{display:none}")
+    for k in range(1, MAXPETS + 1):
+        a(".bzk-pa.f%d:target ~ .bzk-stage .bzk-wg.n%d > video{display:block}"
+          % (k, k))
     # the poster: a quarter-size copy of the same wall, always loaded, so a
     # jump straight across the index strip has something of the right room
     # underneath the plate that is fading in.
@@ -868,6 +983,45 @@ def build_css(pets, man, fx=None):
       "animation-delay:calc(var(--shd) + var(--T,0s));animation-fill-mode:forwards}")
     a("@keyframes bzk-hand{from{opacity:0}to{opacity:1}}")
     a(".bzk-pet.bzk-nosheet .bzk-img{opacity:var(--on);animation:none}")
+    # ======================================================================= #
+    # REPLACEABLE SECTION: AN UNFOCUSED PET'S COLOUR                          #
+    # Asked for directly by Billy: "the non focused pets ... desaturated as   #
+    # well in the color of the current environment treatment". The portfolio  #
+    # does NOT do this - in galUpdate a neighbour is only scaled to GAL_SIDE  #
+    # 0.70 and sunk behind a scrim of the room's air at GAL_DIM 0.60 - so the #
+    # tint is new, and the scrim below is the part that is his.               #
+    #                                                                         #
+    # The cheapest thing that looks right, and the one measured: no new file, #
+    # no new element, no blend mode, no mask off another origin. The pet's    #
+    # own layer is taken to grey and then put back into one colour by a       #
+    # filter chain, and the colour is the room's - --trot and --tsat are set  #
+    # by whichever pet is focused, so a neighbour wears the wall it is        #
+    # standing on and not its own. Both are registered properties, so they    #
+    # cross-fade with the morph over its own 1.4 s instead of snapping.       #
+    # The focused pet turns the chain off and is in full colour.              #
+    # ======================================================================= #
+    TFX = ("grayscale(1) sepia(1) saturate(var(--tsat,1.8)) "
+           "hue-rotate(var(--trot,0deg)) brightness(var(--tbri,.82)) "
+           "contrast(var(--tcon,.88))")
+    TLAYERS = (".bzk-closed", ".bzk-fake", ".bzk-img", ".bzk-win")
+
+    def petfx(prefix, decl):
+        return ",".join(prefix + " " + c for c in TLAYERS) + "{" + decl + "}"
+
+    a(petfx(".bzk-pet", "filter:" + TFX + ";transition:filter var(--slide) linear"))
+    # Nothing targeted yet: pet 1 is the focused one, so pet 1 is in colour.
+    a(petfx(".bzk-stage .bzk-row > div:nth-child(1)", "filter:none"))
+    # ...but the moment any pet is targeted pet 1 is a neighbour like the
+    # rest and has to be given the chain back, or it stands in the new room
+    # still wearing its own colours. (This rule is one class short of the
+    # per-pet rules below, so pet 1 focused still wins.)
+    a(petfx(".bzk-pa:target ~ .bzk-stage .bzk-row > div:nth-child(1)",
+            "filter:" + TFX))
+    for k in range(1, MAXPETS + 1):
+        a(petfx(".bzk-pa.f%d:target ~ .bzk-stage .bzk-row > div:nth-child(%d)"
+                % (k, k), "filter:none"))
+    # ============== end REPLACEABLE: AN UNFOCUSED PET'S COLOUR ============= #
+
     # 5: a neighbour is not dimmed: it stands behind a scrim of the room's own
     #    dark colour, cut to the pet's shape, so it sinks into the wall
     a('.bzk-pet::after{content:"";position:absolute;top:var(--pad);left:var(--pad);'
@@ -1041,9 +1195,9 @@ def build_css(pets, man, fx=None):
         a(".bzk-pa.f%d:target ~ .bzk-stage .bzk-wg:nth-child(%d) > i"
           "{display:block}" % (k, k))
     # the incoming place's ink, for the churning characters on the front
-    a(".bzk-stage.k-%s{--ink:%s}" % (pets[0]["kind"], ramp(pets[0]["kind"])[2]))
+    a(".bzk-stage.k-%s{--ink:%s}" % (pets[0]["kind"], pet_ramp(pets[0])[2]))
     for i, p in enumerate(pets, 1):
-        a(".bzk-pa.f%d:target ~ .bzk-stage{--ink:%s}" % (i, ramp(p["kind"])[2]))
+        a(".bzk-pa.f%d:target ~ .bzk-stage{--ink:%s}" % (i, pet_ramp(p)[2]))
     # the default pet opens once the boot screen has gone
     a(".bzk-stage .bzk-pet:nth-child(1){--shn:bzk-sx,bzk-sy;--hon:bzk-hand;--cln:none;"
       "--shd:calc(var(--boot) + .45s)}")
@@ -1076,7 +1230,14 @@ def build_css(pets, man, fx=None):
     a("@media (max-width:620px){#my-overlay{"
       "--gap:124px;--step:74px;--near:.42;--cy:40%;--bbot:16px;"
       "--bw0:399px;--bh0:130px;--bs:.88}"
-      ".bzk-nm b{font-size:21px}.bzk-nm i{width:9px;height:15px}}")
+      ".bzk-nm b{font-size:21px}.bzk-nm i{width:9px;height:15px}"
+      # THE PHONE KEEPS THE STILLS. The loop is a landscape capture at
+      # 2560 x 1600 and the phone's plate is a portrait one; drawn into
+      # the portrait box it would be scaled, and a scaled glyph cell is
+      # not a character any more. A portrait loop per room is its own
+      # capture and its own megabytes, on the connection least able to
+      # carry them, so the phone stays on the three still moments.
+      " .bzk-wg > video{display:none !important}}")
     a("@media (max-width:374px){#my-overlay{--gap:104px;--step:64px;--bs:.78}}")
     # BETWEEN THE PHONE AND A FULL DESKTOP the row keeps its desktop spacing
     # and the outer neighbours hang off both edges. The clear wall each side
@@ -1108,7 +1269,12 @@ def build_css(pets, man, fx=None):
       # the three transition times this file sets anywhere, all brought to
       # the same 0.3 s - the fade in, the ordinary fade out and the hold
       # the morph asks for - so none of them needs !important to win
-      "#my-overlay .bzk-stage{--sweep:.3s;--wsweep:.3s;--owd:.3s;--odl:0s}"
+      "#my-overlay .bzk-stage{--sweep:.3s;--wsweep:.3s;--owd:.3s;--odl:0s;"
+      "transition:none}"
+      ".bzk-pet .bzk-closed,.bzk-pet .bzk-fake,.bzk-pet .bzk-img,"
+      ".bzk-pet .bzk-win{transition:none}"
+      # a wall that never stops moving is the thing this setting is for
+      ".bzk-wg > video{display:none !important}"
       ".bzk-wg{transition:opacity .3s linear}"
       ".bzk-cb{display:none}"
       "}")
@@ -1246,6 +1412,32 @@ def body(pets, man, base=""):
     relative for the local preview); pet images are always absolute."""
     n = len(pets)
     o = []
+    # EVERY REVEAL SHEET, ASKED FOR AT ONCE, BEHIND THE LOADING SCREEN.
+    # MEASURED, 2026-11-25, cold cache at 10 Mbit/s: a sheet was still
+    # downloading 5.3 s after the move that asked for it, and its reveal
+    # only runs for 3.77 s - so the first visit to a pet showed the last
+    # frame and nothing else. That is the "does not play reliably" Billy
+    # saw. The sheets are smaller now, and every one of them is requested
+    # on the first paint instead of on the first focus.
+    # Only the sheet, and only for the first PRELOAD_N pets: the closed still
+    # is tiny and is drawn on the first paint anyway, and a link per pet is
+    # about 150 characters of paste, which at forty pets is more than the
+    # budget has.
+    for p in pets[:PRELOAD_N]:
+        r = p.get("rev")
+        if r and r.get("sheet"):
+            o.append('<link rel="preload" as="image" href="%s%s">'
+                     % (base, r["sheet"]))
+    if VIDROOMS:
+        # THE GATE, INLINE AND FIRST. The stylesheet is a separate request,
+        # and MEASURED, 2026-11-25: in the gap before it applies the loops
+        # are display:block by the browser's own default and autoplay has
+        # already started pulling them - one run cost 3.04 MB of video on a
+        # page that never showed a frame of it. An inline rule is parsed
+        # before the video elements below it exist, so there is no gap.
+        # Two classes and no id on purpose: every rule in the stylesheet
+        # that turns a room on is stronger than this one.
+        o.append("<style>.bzk-wg>video{display:none}</style>")
     o.append('<div id="my-overlay" style="%s">%s' % (OVERLAY_STYLE, BOOT))
     # THREE ANCHORS PER PET. #pN is pet N with no direction (the index
     # strip, and any link from outside); #pNa is pet N arrived at moving
@@ -1268,7 +1460,21 @@ def body(pets, man, base=""):
     # then the grain, which is over all of it and under everything else
     o.append('<div class="bzk-wall">')
     for i, p in enumerate(pets, 1):
-        o.append('<div class="bzk-wg n%d"><u></u><i></i><i></i><i></i></div>' % i)
+        # A LIVE ROOM. The three still moments stay underneath as the first
+        # paint, so the wall is never blank and never waits on a download;
+        # the video lies over them at the SAME native size, one captured
+        # pixel to one CSS pixel. object-fit:cover would scale it, and a
+        # 7 x 13 glyph cell does not survive scaling - the characters stop
+        # being characters. The src has to be absolute: the paste is served
+        # from rescreatu.com and only the stylesheet's own urls are relative
+        # to the CDN.
+        vid = ""
+        if i in VIDROOMS:
+            vid = ('<video class="bzk-vd" src="%sfx/room-p%d.mp4"'
+                   ' autoplay loop muted playsinline></video>'
+                   % (cdn_base(), i))
+        o.append('<div class="bzk-wg n%d"><u></u><i></i><i></i><i></i>%s</div>'
+                 % (i, vid))
     o.append('<i class="bzk-cb"><u class="bzk-cg"></u></i>')
     o.append('<u class="bzk-grain"></u>')
     o.append("</div>")
@@ -1418,12 +1624,23 @@ def attach_reveal(pets, warn):
 # come back mangled: `title` was cut inside the word, and the tail of it,
 # `tle="HATCHERY">`, was left showing as text over the bar. The build stops
 # rather than ship a paste that has to be tested on the live site again.
-OK_TAGS = ("link", "div", "span", "a", "b", "i", "u", "img")
-OK_ATTRS = ("class", "id", "href", "src", "alt", "style", "rel")
-# `rel` has only ever been seen on the stylesheet link
-ATTR_ON = {"rel": ("link",)}
+# `video` and its four switches went in after Billy ran the filter on his
+# own profile, 2026-11-25: `<video src autoplay loop muted playsinline
+# width>` plays. `preload` was NOT in that test, so it is not used here -
+# see the note on first-load cost in the report.
+OK_TAGS = ("link", "div", "span", "a", "b", "i", "u", "img", "video", "style")
+OK_ATTRS = ("class", "id", "href", "src", "alt", "style", "rel",
+            "autoplay", "loop", "muted", "playsinline", "as")
+# `rel` has only ever been seen on the stylesheet link; the four video
+# switches have only ever been seen on a video
+ATTR_ON = {"rel": ("link",), "as": ("link",), "autoplay": ("video",), "loop": ("video",),
+           "muted": ("video",), "playsinline": ("video",)}
 TAG_RE = re.compile(r"<\s*([a-zA-Z][-\w]*)([^>]*)>")
-ATTR_RE = re.compile(r"([a-zA-Z_:][-\w:.]*)\s*=")
+# both `name="value"` and a bare switch, so a valueless attribute cannot
+# slip past. The value is part of the match, which is what keeps the words
+# inside a class or a style from being read as attributes of their own.
+ATTR_RE = re.compile(
+    r"""([a-zA-Z_:][-\w:.]*)\s*(?:=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+))?""")
 
 
 def check_paste(paste):

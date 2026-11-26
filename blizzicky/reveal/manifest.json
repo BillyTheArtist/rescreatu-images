@@ -1,174 +1,204 @@
 {
- "generated": "2026-11-25T11:41:12",
- "keys": {
-  "30-black-effect-undead": {
-   "cell_cols": 29,
-   "cell_px": [
-    7.0,
-    13.0
-   ],
-   "cell_rows": 15,
-   "closed": "30-black-effect-undead-closed.webp",
-   "closed_bytes": 74150,
-   "cols": 8,
-   "duration_s": 3.77,
-   "fps": 21.22,
-   "frame_px": 400,
-   "frames": 80,
-   "key": "30-black-effect-undead",
-   "megapixels": 12.8,
-   "quality": 90,
-   "rows": 10,
-   "scale": 2,
-   "sheet": "30-black-effect-undead.webp",
-   "sheet_bytes": 1664582,
-   "sheet_px": [
-    3200,
-    4000
-   ],
-   "skipped": true,
-   "source": "https://media.rescreatu.com/pets/30/black/effect-undead.png"
+  "generated": "2026-11-25T17:12:27",
+  "keys": {
+    "30-black-effect-undead": {
+      "cell_cols": 29,
+      "cell_px": [
+        7.0,
+        13.0
+      ],
+      "cell_rows": 15,
+      "close": "30-black-effect-undead-close.webp",
+      "close_bytes": 282504,
+      "close_duration_s": 0.95,
+      "close_frames": 24,
+      "close_rows": 3,
+      "closed": "30-black-effect-undead-closed.webp",
+      "closed_bytes": 25030,
+      "cols": 8,
+      "duration_s": 3.77,
+      "fps": 16.98,
+      "frame_px": 200,
+      "frames": 64,
+      "key": "30-black-effect-undead",
+      "megapixels": 2.56,
+      "quality": 85,
+      "render_s": 9.1,
+      "rows": 8,
+      "scale": 1.0,
+      "sheet": "30-black-effect-undead.webp",
+      "sheet_bytes": 511280,
+      "sheet_px": [
+        1600,
+        1600
+      ],
+      "source": "https://media.rescreatu.com/pets/30/black/effect-undead.png"
+    },
+    "33-rainbow-effect-cosmic": {
+      "cell_cols": 29,
+      "cell_px": [
+        7.0,
+        13.0
+      ],
+      "cell_rows": 15,
+      "close": "33-rainbow-effect-cosmic-close.webp",
+      "close_bytes": 449420,
+      "close_duration_s": 0.95,
+      "close_frames": 24,
+      "close_rows": 3,
+      "closed": "33-rainbow-effect-cosmic-closed.webp",
+      "closed_bytes": 31240,
+      "cols": 8,
+      "duration_s": 3.77,
+      "fps": 16.98,
+      "frame_px": 200,
+      "frames": 64,
+      "key": "33-rainbow-effect-cosmic",
+      "megapixels": 2.56,
+      "quality": 85,
+      "render_s": 11.9,
+      "rows": 8,
+      "scale": 1.0,
+      "sheet": "33-rainbow-effect-cosmic.webp",
+      "sheet_bytes": 831862,
+      "sheet_px": [
+        1600,
+        1600
+      ],
+      "source": "https://media.rescreatu.com/pets/33/rainbow/effect-cosmic.png"
+    },
+    "37-albino-effect-frostlight": {
+      "cell_cols": 29,
+      "cell_px": [
+        7.0,
+        13.0
+      ],
+      "cell_rows": 15,
+      "close": "37-albino-effect-frostlight-close.webp",
+      "close_bytes": 289474,
+      "close_duration_s": 0.95,
+      "close_frames": 24,
+      "close_rows": 3,
+      "closed": "37-albino-effect-frostlight-closed.webp",
+      "closed_bytes": 21848,
+      "cols": 8,
+      "duration_s": 3.77,
+      "fps": 16.98,
+      "frame_px": 200,
+      "frames": 64,
+      "key": "37-albino-effect-frostlight",
+      "megapixels": 2.56,
+      "quality": 85,
+      "render_s": 8.0,
+      "rows": 8,
+      "scale": 1.0,
+      "sheet": "37-albino-effect-frostlight.webp",
+      "sheet_bytes": 406476,
+      "sheet_px": [
+        1600,
+        1600
+      ],
+      "source": "https://media.rescreatu.com/pets/37/albino/effect-frostlight.png"
+    },
+    "45-albino-effect-stardust": {
+      "cell_cols": 29,
+      "cell_px": [
+        7.0,
+        13.0
+      ],
+      "cell_rows": 15,
+      "close": "45-albino-effect-stardust-close.webp",
+      "close_bytes": 219480,
+      "close_duration_s": 0.95,
+      "close_frames": 24,
+      "close_rows": 3,
+      "closed": "45-albino-effect-stardust-closed.webp",
+      "closed_bytes": 16380,
+      "cols": 8,
+      "duration_s": 3.77,
+      "fps": 16.98,
+      "frame_px": 200,
+      "frames": 64,
+      "key": "45-albino-effect-stardust",
+      "megapixels": 2.56,
+      "quality": 85,
+      "render_s": 21.1,
+      "rows": 8,
+      "scale": 1.0,
+      "sheet": "45-albino-effect-stardust.webp",
+      "sheet_bytes": 310248,
+      "sheet_px": [
+        1600,
+        1600
+      ],
+      "source": "https://media.rescreatu.com/pets/45/albino/effect-stardust.png"
+    },
+    "7-ginger-effect-derp-baby": {
+      "cell_cols": 29,
+      "cell_px": [
+        7.0,
+        13.0
+      ],
+      "cell_rows": 15,
+      "close": "7-ginger-effect-derp-baby-close.webp",
+      "close_bytes": 215770,
+      "close_duration_s": 0.95,
+      "close_frames": 24,
+      "close_rows": 3,
+      "closed": "7-ginger-effect-derp-baby-closed.webp",
+      "closed_bytes": 18852,
+      "cols": 8,
+      "duration_s": 3.77,
+      "fps": 16.98,
+      "frame_px": 200,
+      "frames": 64,
+      "key": "7-ginger-effect-derp-baby",
+      "megapixels": 2.56,
+      "quality": 85,
+      "render_s": 9.8,
+      "rows": 8,
+      "scale": 1.0,
+      "sheet": "7-ginger-effect-derp-baby.webp",
+      "sheet_bytes": 423134,
+      "sheet_px": [
+        1600,
+        1600
+      ],
+      "source": "https://media.rescreatu.com/pets/7/ginger/effect-derp-baby.png"
+    },
+    "71-albino-effect-derp": {
+      "cell_cols": 29,
+      "cell_px": [
+        7.0,
+        13.0
+      ],
+      "cell_rows": 15,
+      "close": "71-albino-effect-derp-close.webp",
+      "close_bytes": 163672,
+      "close_duration_s": 0.95,
+      "close_frames": 24,
+      "close_rows": 3,
+      "closed": "71-albino-effect-derp-closed.webp",
+      "closed_bytes": 12456,
+      "cols": 8,
+      "duration_s": 3.77,
+      "fps": 16.98,
+      "frame_px": 200,
+      "frames": 64,
+      "key": "71-albino-effect-derp",
+      "megapixels": 2.56,
+      "quality": 85,
+      "render_s": 10.3,
+      "rows": 8,
+      "scale": 1.0,
+      "sheet": "71-albino-effect-derp.webp",
+      "sheet_bytes": 227322,
+      "sheet_px": [
+        1600,
+        1600
+      ],
+      "source": "https://media.rescreatu.com/pets/71/albino/effect-derp.png"
+    }
   },
-  "33-rainbow-effect-cosmic": {
-   "cell_cols": 29,
-   "cell_px": [
-    7.0,
-    13.0
-   ],
-   "cell_rows": 15,
-   "closed": "33-rainbow-effect-cosmic-closed.webp",
-   "closed_bytes": 88868,
-   "cols": 8,
-   "duration_s": 3.77,
-   "fps": 21.22,
-   "frame_px": 400,
-   "frames": 80,
-   "key": "33-rainbow-effect-cosmic",
-   "megapixels": 12.8,
-   "quality": 90,
-   "rows": 10,
-   "scale": 2,
-   "sheet": "33-rainbow-effect-cosmic.webp",
-   "sheet_bytes": 2381914,
-   "sheet_px": [
-    3200,
-    4000
-   ],
-   "skipped": true,
-   "source": "https://media.rescreatu.com/pets/33/rainbow/effect-cosmic.png"
-  },
-  "37-albino-effect-frostlight": {
-   "cell_cols": 29,
-   "cell_px": [
-    7.0,
-    13.0
-   ],
-   "cell_rows": 15,
-   "closed": "37-albino-effect-frostlight-closed.webp",
-   "closed_bytes": 58910,
-   "cols": 8,
-   "duration_s": 3.77,
-   "fps": 21.22,
-   "frame_px": 400,
-   "frames": 80,
-   "key": "37-albino-effect-frostlight",
-   "megapixels": 12.8,
-   "quality": 90,
-   "rows": 10,
-   "scale": 2,
-   "sheet": "37-albino-effect-frostlight.webp",
-   "sheet_bytes": 1988270,
-   "sheet_px": [
-    3200,
-    4000
-   ],
-   "skipped": true,
-   "source": "https://media.rescreatu.com/pets/37/albino/effect-frostlight.png"
-  },
-  "45-albino-effect-stardust": {
-   "cell_cols": 29,
-   "cell_px": [
-    7.0,
-    13.0
-   ],
-   "cell_rows": 15,
-   "closed": "45-albino-effect-stardust-closed.webp",
-   "closed_bytes": 45142,
-   "cols": 8,
-   "duration_s": 3.77,
-   "fps": 21.22,
-   "frame_px": 400,
-   "frames": 80,
-   "key": "45-albino-effect-stardust",
-   "megapixels": 12.8,
-   "quality": 90,
-   "rows": 10,
-   "scale": 2,
-   "sheet": "45-albino-effect-stardust.webp",
-   "sheet_bytes": 1444214,
-   "sheet_px": [
-    3200,
-    4000
-   ],
-   "skipped": true,
-   "source": "https://media.rescreatu.com/pets/45/albino/effect-stardust.png"
-  },
-  "7-ginger-effect-derp-baby": {
-   "cell_cols": 29,
-   "cell_px": [
-    7.0,
-    13.0
-   ],
-   "cell_rows": 15,
-   "closed": "7-ginger-effect-derp-baby-closed.webp",
-   "closed_bytes": 54968,
-   "cols": 8,
-   "duration_s": 3.77,
-   "fps": 21.22,
-   "frame_px": 400,
-   "frames": 80,
-   "key": "7-ginger-effect-derp-baby",
-   "megapixels": 12.8,
-   "quality": 90,
-   "rows": 10,
-   "scale": 2,
-   "sheet": "7-ginger-effect-derp-baby.webp",
-   "sheet_bytes": 1265582,
-   "sheet_px": [
-    3200,
-    4000
-   ],
-   "skipped": true,
-   "source": "https://media.rescreatu.com/pets/7/ginger/effect-derp-baby.png"
-  },
-  "71-albino-effect-derp": {
-   "cell_cols": 29,
-   "cell_px": [
-    7.0,
-    13.0
-   ],
-   "cell_rows": 15,
-   "closed": "71-albino-effect-derp-closed.webp",
-   "closed_bytes": 32398,
-   "cols": 8,
-   "duration_s": 3.77,
-   "fps": 21.22,
-   "frame_px": 400,
-   "frames": 80,
-   "key": "71-albino-effect-derp",
-   "megapixels": 12.8,
-   "quality": 90,
-   "rows": 10,
-   "scale": 2,
-   "sheet": "71-albino-effect-derp.webp",
-   "sheet_bytes": 1072768,
-   "sheet_px": [
-    3200,
-    4000
-   ],
-   "skipped": true,
-   "source": "https://media.rescreatu.com/pets/71/albino/effect-derp.png"
-  }
- },
- "ramp": " .:-=+*#%@"
+  "ramp": " .:-=+*#%@"
 }
