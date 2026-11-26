@@ -1,0 +1,116 @@
+{
+ "sky": {
+  "mp4_bytes": 138158,
+  "frames": 58,
+  "wrap_diff": 2.3664,
+  "max_adj_diff": 2.6479,
+  "mean_adj_diff": 0.1892,
+  "loop": "OK",
+  "poster_bytes": 17160,
+  "poster_px": [
+   640,
+   360
+  ],
+  "px": [
+   1280,
+   720
+  ],
+  "fps": 12,
+  "crf": 37
+ },
+ "water": {
+  "mp4_bytes": 73595,
+  "frames": 58,
+  "wrap_diff": 1.5262,
+  "max_adj_diff": 1.8274,
+  "mean_adj_diff": 0.1034,
+  "loop": "OK",
+  "poster_bytes": 7122,
+  "poster_px": [
+   640,
+   360
+  ],
+  "px": [
+   1280,
+   720
+  ],
+  "fps": 12,
+  "crf": 37
+ },
+ "cathedral": {
+  "mp4_bytes": 139059,
+  "frames": 58,
+  "wrap_diff": 2.0857,
+  "max_adj_diff": 2.2647,
+  "mean_adj_diff": 0.1195,
+  "loop": "OK",
+  "poster_bytes": 14822,
+  "poster_px": [
+   640,
+   360
+  ],
+  "px": [
+   1280,
+   720
+  ],
+  "fps": 12,
+  "crf": 37
+ },
+ "garden": {
+  "mp4_bytes": 147219,
+  "frames": 58,
+  "wrap_diff": 2.4178,
+  "max_adj_diff": 2.6633,
+  "mean_adj_diff": 0.1634,
+  "loop": "OK",
+  "poster_bytes": 17636,
+  "poster_px": [
+   640,
+   360
+  ],
+  "px": [
+   1280,
+   720
+  ],
+  "fps": 12,
+  "crf": 37
+ },
+ "void": {
+  "mp4_bytes": 93968,
+  "frames": 58,
+  "wrap_diff": 1.6527,
+  "max_adj_diff": 1.9429,
+  "mean_adj_diff": 0.1392,
+  "loop": "OK",
+  "poster_bytes": 7708,
+  "poster_px": [
+   640,
+   360
+  ],
+  "px": [
+   1280,
+   720
+  ],
+  "fps": 12,
+  "crf": 37
+ },
+ "geode": {
+  "mp4_bytes": 136721,
+  "frames": 58,
+  "wrap_diff": 2.092,
+  "max_adj_diff": 2.3802,
+  "mean_adj_diff": 0.1518,
+  "loop": "OK",
+  "poster_bytes": 14754,
+  "poster_px": [
+   640,
+   360
+  ],
+  "px": [
+   1280,
+   720
+  ],
+  "fps": 12,
+  "crf": 37
+ }
+}

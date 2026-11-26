@@ -1,0 +1,24 @@
+# The six placeholders cycled to twenty entries. Only to prove scale:
+# the keys repeat, so the twenty pets share six reveal sheets and six
+# bar plates, which is why the twenty-pet run fetches so little.
+#
+placeholder | placeholder 01 | https://media.rescreatu.com/pets/7/ginger/effect-derp-baby.png | sky | left
+placeholder | placeholder 02 | https://media.rescreatu.com/pets/30/black/effect-undead.png | void | right
+placeholder | placeholder 03 | https://media.rescreatu.com/pets/45/albino/effect-stardust.png | geode | left
+placeholder | placeholder 04 | https://media.rescreatu.com/pets/71/albino/effect-derp.png | garden | right
+placeholder | placeholder 05 | https://media.rescreatu.com/pets/33/rainbow/effect-cosmic.png | cathedral | left
+placeholder | placeholder 06 | https://media.rescreatu.com/pets/37/albino/effect-frostlight.png | water | right
+placeholder | placeholder 07 | https://media.rescreatu.com/pets/7/ginger/effect-derp-baby.png | sky | left
+placeholder | placeholder 08 | https://media.rescreatu.com/pets/30/black/effect-undead.png | void | right
+placeholder | placeholder 09 | https://media.rescreatu.com/pets/45/albino/effect-stardust.png | geode | left
+placeholder | placeholder 10 | https://media.rescreatu.com/pets/71/albino/effect-derp.png | garden | right
+placeholder | placeholder 11 | https://media.rescreatu.com/pets/33/rainbow/effect-cosmic.png | cathedral | left
+placeholder | placeholder 12 | https://media.rescreatu.com/pets/37/albino/effect-frostlight.png | water | right
+placeholder | placeholder 13 | https://media.rescreatu.com/pets/7/ginger/effect-derp-baby.png | sky | left
+placeholder | placeholder 14 | https://media.rescreatu.com/pets/30/black/effect-undead.png | void | right
+placeholder | placeholder 15 | https://media.rescreatu.com/pets/45/albino/effect-stardust.png | geode | left
+placeholder | placeholder 16 | https://media.rescreatu.com/pets/71/albino/effect-derp.png | garden | right
+placeholder | placeholder 17 | https://media.rescreatu.com/pets/33/rainbow/effect-cosmic.png | cathedral | left
+placeholder | placeholder 18 | https://media.rescreatu.com/pets/37/albino/effect-frostlight.png | water | right
+placeholder | placeholder 19 | https://media.rescreatu.com/pets/7/ginger/effect-derp-baby.png | sky | left
+placeholder | placeholder 20 | https://media.rescreatu.com/pets/30/black/effect-undead.png | void | right
