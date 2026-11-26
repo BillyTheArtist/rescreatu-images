@@ -68,13 +68,15 @@ EDGE = "#93a8a2"   # the ASCII name's edge cells: --text, stepped back
 ART = 200         # the pet box, and the pet art's own size
 FSCALE = 1.28     # the focused pet's scale: 200 -> 256
 FOCUS = 256       # ART * FSCALE, for the name's offset
-GAP = 290         # focus centre -> first neighbour centre
-STEP = 140        # distance between neighbours beyond that
+GAP = 338         # focus centre -> first neighbour centre
+STEP = 185        # distance between neighbours beyond that
 NEAR = 0.50       # a neighbour's scale
 WINDOW = 3        # pets this far from the focus are drawn; the rest are none
 # MEASURED at 1440: the clear wall either side of the focused pet is
-# 290 - 128 - 50 = 112 px and the wall between two neighbours is
-# 140 - 100 = 40 px, so the centre reads 2.8x more set apart than the rest.
+# 338 - 128 - 50 = 160 px and the wall between two neighbours is
+# 185 - 100 = 85 px. The whole row is wider than the window on purpose -
+# Billy, 2026-11-25: two neighbours a side stand clear and the third
+# runs off the edge.
 
 SLIDE = ".34s"    # the row's move
 FADE = ".5s"      # the room crossfade
@@ -101,6 +103,22 @@ NAME_FLOOR = 0.08
 NAME_WIDE = 0.70  # a name is at most this much of the viewport
 NAME_HEAVY = 4    # ramp index at which a cell moves to the bright layer
 NAME_FONT = "fonts/unifrakturcook-latin-700-normal.woff2"
+
+# ---- the sweep between rooms --------------------------------------------- #
+# The heavy build swept the screen cell by cell between environments and the
+# lite build had cut it to a crossfade. It is back as TWO compositor jobs and
+# one small picture: the incoming room is revealed by a clip-path animated in
+# steps, and a band of churning glyph cells rides the boundary on transform.
+# It runs ONLY when the room actually changes - the room element's own
+# display:none -> block restarts the clip, and the band's animation-name is
+# the KIND, so two pets in the same room leave both untouched.
+SW_FILE = "sweep.png"
+SW_CELL = (7, 13)
+SW_COLS = 32      # the band is 224 px wide
+SW_ROWS = 24      # and tiles every 312 px
+SW_RUN = ".9s"
+SW_STEPS = 96     # the reveal edge jumps 100vw / 96 (15 px at 1440) a time
+SW_CHURN = ".15s"  # one 4-step turn of the band's characters
 
 # the kind's four-stop ramp, as in the heavy build (hue, lightness, sat mult)
 ENV = {
@@ -437,6 +455,65 @@ def make_pixels(pets, warn):
 
 
 # --------------------------------------------------------------------------- #
+# the sweep band                                                              #
+# --------------------------------------------------------------------------- #
+
+def make_sweep(warn):
+    """sweep.png: one vertical strip of glyph and block cells on the 7x13
+    terminal grid, dense down the middle and RAGGED CELL BY CELL at both
+    edges, so the reveal behind it reads as cells turning over and not as a
+    straight wipe line. It tiles vertically (ROWS * 13 px) and the page
+    rides it across with transform and nothing else."""
+    import random
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except Exception as exc:
+        warn.append("no Pillow - no sweep band (%s)" % exc)
+        return None
+    cw, ch, cols, rows = SW_CELL[0], SW_CELL[1], SW_COLS, SW_ROWS
+    W, H = cw * cols, ch * rows
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    font = None
+    src = os.path.join(HERE, "fonts", "ibm-plex-mono-latin-500-normal.woff2")
+    if os.path.isfile(src):
+        try:
+            import tempfile
+            from fontTools.ttLib import TTFont
+            f = TTFont(src)
+            f.flavor = None
+            t = tempfile.NamedTemporaryFile(suffix=".ttf", delete=False)
+            t.close()
+            f.save(t.name)
+            font = ImageFont.truetype(t.name, 13)
+        except Exception as exc:
+            warn.append("sweep band falls back to blocks (%s)" % exc)
+    rnd = random.Random(20261125)
+    glyphs = "&@%#*+=-:.oxX!/\\|[]<>"
+    cols_rgb = [tuple(int(TINT[i:i + 2], 16) for i in (1, 3, 5)),
+                tuple(int(TEXT[i:i + 2], 16) for i in (1, 3, 5))]
+    for cx in range(cols):
+        x = cx / float(cols - 1)
+        p = 1.0 - abs(2.0 * x - 1.0) ** 1.8      # 1 in the middle, 0 at the edges
+        for cy in range(rows):
+            if rnd.random() > min(1.0, p * 1.25):
+                continue
+            al = int(255 * max(0.18, min(1.0, p * 1.35 * rnd.uniform(.6, 1.1))))
+            r, g, b = cols_rgb[0] if rnd.random() < .45 else cols_rgb[1]
+            px, py = cx * cw, cy * ch
+            if font is None or rnd.random() < .30:
+                # a block cell, inset so the grid stays visible
+                d.rectangle([px + 1, py + 2, px + cw - 2, py + ch - 3],
+                            fill=(r, g, b, int(al * .8)))
+            else:
+                d.text((px, py + ch - 3), rnd.choice(glyphs), font=font,
+                       fill=(r, g, b, al), anchor="ls")
+    out = os.path.join(HERE, SW_FILE)
+    im.save(out, "PNG", optimize=True)
+    return os.path.getsize(out)
+
+
+# --------------------------------------------------------------------------- #
 # the name, as ASCII art                                                      #
 # --------------------------------------------------------------------------- #
 
@@ -626,7 +703,7 @@ def bar_css(a, man):
             a("@media (max-width:620px){" + "".join(rules) + "}")
 
 
-def build_css(pets, man, rooms, order):
+def build_css(pets, man, rooms, order, sweep_bytes=0):
     L = []
     a = L.append
     n = len(pets)
@@ -643,13 +720,15 @@ def build_css(pets, man, rooms, order):
       "--mono:\"BZKMono\",ui-monospace,monospace;--black:\"BZKBlack\",serif;"
       "--focus:%dpx;--sz:%dpx;--fs:%.3f;--gap:%dpx;--step:%dpx;--near:%.3f;"
       "--cy:44%%;--nmz:1;"
+      "--swp:%s;--rfade:.12s;--swbw:%dpx;--swch:%dpx;--swchr:%s;"
       "--slide:%s;--fade:%s;--boot:%s;--bbot:26px;--bpad:16px;--bs:.78;"
       "position:fixed;top:0;left:0;width:100vw;height:100vh;"
       "z-index:999999999;background:var(--ink);overflow:hidden;"
       "font-family:var(--mono);color:var(--text);"
       "-webkit-font-smoothing:antialiased}"
       % (INK, TEXT, DIM, LINE, TINT, ACCENT, FOCUS, ART, FSCALE, GAP, STEP,
-         NEAR, SLIDE, FADE, BOOT))
+         NEAR, SW_RUN, SW_CELL[0] * SW_COLS, SW_CELL[1], SW_CHURN,
+         SLIDE, FADE, BOOT))
     a("#my-overlay *{box-sizing:border-box;margin:0;padding:0;border:0}")
     # the LOADING gate the inline style put up, taken down from here
     a("#bzk-boot{z-index:60;animation:bzk-off .3s linear var(--boot) forwards}")
@@ -666,11 +745,20 @@ def build_css(pets, man, rooms, order):
     # to it. transition-behavior:allow-discrete keeps the outgoing room
     # displayed for the whole 0.5 s fade, and @starting-style gives the
     # incoming one an opacity to come from.
-    a(".bzk-rm{position:absolute;inset:0;display:none;opacity:0;"
+    # THE OUTGOING ROOM IS HELD FOR THE WHOLE SWEEP. display is transitioned
+    # for --swp with allow-discrete, so it stays block and FULLY VISIBLE
+    # underneath while the incoming room, one z-index above it, is uncovered
+    # cell by cell. The 0.12 s opacity is only there so that
+    # prefers-reduced-motion has something to lengthen into a plain fade.
+    a(".bzk-rm{position:absolute;inset:0;display:none;opacity:0;z-index:1;"
       "background-position:center center;background-size:cover;"
       "background-repeat:no-repeat;background-color:var(--ink);"
-      "transition:opacity var(--fade) linear,display var(--fade);"
-      "transition-behavior:allow-discrete}")
+      "animation:bzk-swp var(--swp) steps(%d,jump-none) both;"
+      "transition:opacity var(--rfade) linear var(--swp),display var(--swp);"
+      "transition-behavior:allow-discrete}" % SW_STEPS)
+    # THE REVEAL ITSELF. clip-path only - no mask, no blend mode, nothing on
+    # the wall that makes the compositor read a pixel back.
+    a("@keyframes bzk-swp{from{clip-path:var(--swc)}to{clip-path:inset(0)}}")
     # THE ID IS LOAD-BEARING. The inline gate in the paste is
     # `.bzk-wall>div>video{display:none}` at (0,1,2) and it beats a plain
     # `.bzk-rm > video` at (0,1,1) whatever the source order, so every
@@ -683,9 +771,53 @@ def build_css(pets, man, rooms, order):
         if e.get("poster"):
             a(".bzk-rm.m-%s{background-image:url(%s)}" % (k, e["poster"]))
 
+    # ======================================================================= #
+    # REPLACEABLE SECTION: THE SWEEP BETWEEN ROOMS                            #
+    # The direction lives in two variables and nothing else: a backward move #
+    # is #pNb, whose anchor carries .db, so only the `from` end of both      #
+    # keyframes changes. A variable inside @keyframes does NOT restart an    #
+    # animation, which is why turning round on the same room is silent.      #
+    # ======================================================================= #
+    # THE BAND CLEARS THE SCREEN AT BOTH ENDS. Tracking the reveal edge with
+    # the band's centre parked half the band on screen when it was done; the
+    # travel is a band-width wider instead, so it ends off the edge and the
+    # edge it is hiding still falls inside it the whole way across.
+    a(".bzk-stage{--swc:inset(0 100% 0 0);"
+      "--swx0:calc(var(--swbw) * -1);--swx1:100vw}")
+    a(".bzk-pa.db:target ~ .bzk-stage{--swc:inset(0 0 0 100%);"
+      "--swx0:100vw;--swx1:calc(var(--swbw) * -1)}")
+    if sweep_bytes:
+        a(".bzk-sw{position:absolute;top:0;left:0;width:var(--swbw);"
+          "height:100%;z-index:3;overflow:hidden;pointer-events:none;"
+          "transform:translateX(var(--swx1));"
+          "animation-name:var(--swn,none);animation-duration:var(--swp);"
+          "animation-timing-function:linear;animation-fill-mode:both}")
+        # The churn: the strip is taller than the band and steps DOWN one
+        # cell row at a time, so the characters standing at any point on
+        # the screen change four times while the band crosses it.
+        a('.bzk-sw::before{content:"";position:absolute;left:0;right:0;'
+          "top:calc(var(--swch) * -4);bottom:calc(var(--swch) * -4);"
+          "background-image:url(%s);background-repeat:repeat-y;"
+          "background-position:left top;"
+          "animation:bzk-swq var(--swchr) steps(4,jump-none) 6 both}" % SW_FILE)
+        a("@keyframes bzk-swq{from{transform:translateY(0)}"
+          "to{transform:translateY(calc(var(--swch) * -4))}}")
+        for k in KINDS:
+            a("@keyframes bzk-sw-%s{from{transform:translateX(var(--swx0))}"
+              "to{transform:translateX(var(--swx1))}}" % k)
+    # ==================== end REPLACEABLE: THE SWEEP ======================= #
+
+    # THE OPACITY FADE IS NOW REDUCED-MOTION ONLY. Under the sweep the
+    # incoming room must be at full opacity the instant it is displayed -
+    # the clip is what hides it - and the outgoing must hold opacity 1 for
+    # the whole 0.9 s, which is the delay on the transition above. A
+    # @starting-style here would fade the incoming in through the band, so
+    # the whole set of them is emitted inside the reduced-motion query.
+    start_fade = []
+
     def roomrule(sel, kind):
-        a("%s .bzk-rm.m-%s{display:block;opacity:1}" % (sel, kind))
-        a("@starting-style{%s .bzk-rm.m-%s{opacity:0}}" % (sel, kind))
+        a("%s .bzk-rm.m-%s{display:block;opacity:1;z-index:2}" % (sel, kind))
+        start_fade.append("%s .bzk-rm.m-%s{opacity:0}" % (sel, kind))
 
     roomrule(".bzk-stage", pets[0]["kind"])
     a(".bzk-pa:target ~ .bzk-stage .bzk-rm{display:none;opacity:0}")
@@ -789,7 +921,7 @@ def build_css(pets, man, rooms, order):
       "transform:translateX(-50%);white-space:pre;text-align:left;"
       "font-family:var(--mono);font-weight:400;line-height:1;"
       "font-size:min(calc(var(--nmk,1) * var(--nmz,1) * 1vw),1.45vh,15px);"
-      "text-shadow:0 0 3px rgba(5,7,10,.95),0 1px 2px rgba(5,7,10,.95);"
+      "text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,0 0 4px rgba(0,0,0,.98),0 0 11px rgba(0,0,0,.9);"
       "animation-name:var(--run,none);animation-duration:.4s;"
       "animation-timing-function:linear;animation-fill-mode:both}")
     a(".bzk-nm::before{z-index:2;color:var(--text)}")
@@ -909,7 +1041,11 @@ def build_css(pets, man, rooms, order):
         a("%s .n%d{visibility:visible;--run:bzk-type}" % (sel, f))
         a("%s .bzk-bp.n%d{display:block}" % (sel, f))
         trot, tsat = tint(pets[f - 1]["kind"])
-        a("%s{--trot:%s;--tsat:%s}" % (sel, trot, tsat))
+        # --swn IS THE ROOM, NOT THE PET. Two pets in the same room name
+        # the same animation, the band is never reconstructed, and the
+        # move passes with no sweep at all.
+        a("%s{--trot:%s;--tsat:%s;--swn:bzk-sw-%s}"
+          % (sel, trot, tsat, pets[f - 1]["kind"]))
         # the prefetch list for this state: both neighbours' sheets, bar
         # plates and room poster
         pv, nx = ((f - 2) % n) + 1, (f % n) + 1
@@ -957,16 +1093,16 @@ def build_css(pets, man, rooms, order):
     # needs and the row still clears the top.
     a("@media (max-height:800px) and (min-width:621px){#my-overlay{--cy:39%}}")
     a("@media (max-width:620px){#my-overlay{--focus:220px;--fs:1.100;"
-      "--gap:168px;--step:72px;"
+      "--gap:197px;--step:84px;"
       "--near:.32;--cy:40%;--nmz:1.26;--bbot:16px;--bw0:399px;--bh0:130px;"
       "--bs:.88}}")
     a("@media (max-width:374px){#my-overlay{--focus:200px;--fs:1.000;"
-      "--gap:148px;--step:64px;--near:.30;--bs:.78}}")
+      "--gap:175px;--step:76px;--near:.30;--bs:.78}}")
     a("@media (min-width:621px) and (max-width:1100px){"
-      "#my-overlay{--focus:216px;--fs:1.080;--gap:200px;--step:98px;"
+      "#my-overlay{--focus:216px;--fs:1.080;--gap:258px;--step:138px;"
       "--near:.40}}")
     a("@media (min-width:1101px) and (max-width:1320px){"
-      "#my-overlay{--focus:236px;--fs:1.180;--gap:244px;--step:120px;"
+      "#my-overlay{--focus:236px;--fs:1.180;--gap:294px;--step:162px;"
       "--near:.46}}")
     a("@media (min-width:621px){#my-overlay{--bs:1}}")
 
@@ -977,7 +1113,13 @@ def build_css(pets, man, rooms, order):
       "#bzk-boot{opacity:0;visibility:hidden}"
       ".bzk-pet > img{opacity:1 !important}"
       ".bzk-win{display:none !important}"
-      "#my-overlay .bzk-rm > video{display:none !important}}")
+      ".bzk-sw{display:none !important}"
+      "#my-overlay .bzk-rm > video{display:none !important}"
+      # the sweep becomes the crossfade this build shipped with
+      "#my-overlay .bzk-rm{clip-path:none !important;"
+      "transition:opacity .4s linear,display .4s !important;"
+      "transition-behavior:allow-discrete !important}"
+      "@starting-style{" + "".join(start_fade) + "}}")
     return "\n".join(L) + "\n"
 
 
@@ -1074,6 +1216,7 @@ def body(pets, man, rooms, order, local=False):
     for k in order:
         o.append('<div class="bzk-rm m-%s"><video src="%s%s" autoplay loop '
                  'muted playsinline></video></div>' % (k, base, rooms[k]["mp4"]))
+    o.append('<u class="bzk-sw"></u>')
     o.append("</div>")
     o.append('<div class="bzk-row">')
     for i, p in enumerate(pets, 1):
@@ -1187,6 +1330,7 @@ def main(argv=None):
     attach_reveal(pets, warn)
     make_pixels(pets, warn)
     attach_names(pets, warn)
+    sweep_bytes = make_sweep(warn) or 0
     man = read_plates(warn)
     attach_plates(pets, man, warn)
     rooms = read_rooms(warn)
@@ -1196,7 +1340,7 @@ def main(argv=None):
     for w in warn:
         print("WARNING:", w)
 
-    css = build_css(pets, man, rooms, order)
+    css = build_css(pets, man, rooms, order, sweep_bytes)
     paste = '<link rel="stylesheet" href="%sprofile%s.css">\n%s\n' \
             % (cdn_base(), tag, body(pets, man, rooms, order, local=False))
     check_paste(paste)
@@ -1236,6 +1380,9 @@ def main(argv=None):
     print("loops        : %.2f MB  posters %.0f KB  bar plates %.0f KB  "
           "sheets %.0f KB" % (vid / 1e6, pos / 1024.0, bar / 1024.0,
                               sum(s for s, _ in sheets.values()) / 1024.0))
+    print("sweep band   : %s  %.1f KB  (%d x %d, %dx%d cells)"
+          % (SW_FILE, sweep_bytes / 1024.0, SW_CELL[0] * SW_COLS,
+             SW_CELL[1] * SW_ROWS, SW_COLS, SW_ROWS))
     print("cdn ref      : %s" % REF)
     chars = len(paste)
     each = (len(body(pets, man, rooms, order)) -
