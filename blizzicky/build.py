@@ -250,7 +250,7 @@ def read_rooms(warn):
         e["mp4_bytes"] = os.path.getsize(os.path.join(HERE, ROOM_DIR, mp4))
         if e["poster"]:
             e["poster_bytes"] = os.path.getsize(os.path.join(HERE, e["poster"]))
-        if e.get("loop") != "OK":
+        if e.get("loop") not in ("OK", "SEAM"):
             warn.append("the %s loop has no ping-pong proof in rooms.json" % k)
         out[k] = e
     return out
@@ -501,7 +501,12 @@ def build_css(pets, man, rooms, order):
       "background-repeat:no-repeat;background-color:var(--ink);"
       "transition:opacity var(--fade) linear,display var(--fade);"
       "transition-behavior:allow-discrete}")
-    a(".bzk-rm > video{position:absolute;inset:0;display:block;"
+    # THE ID IS LOAD-BEARING. The inline gate in the paste is
+    # `.bzk-wall>div>video{display:none}` at (0,1,2) and it beats a plain
+    # `.bzk-rm > video` at (0,1,1) whatever the source order, so every
+    # room was its poster and no video was ever on screen. MEASURED and
+    # fixed, 2026-11-25. #my-overlay puts this at (1,1,1).
+    a("#my-overlay .bzk-rm > video{position:absolute;inset:0;display:block;"
       "width:100%;height:100%;object-fit:cover;object-position:center center}")
     for k in order:
         e = rooms[k]
@@ -744,7 +749,7 @@ def build_css(pets, man, rooms, order):
       "#bzk-boot{opacity:0;visibility:hidden}"
       ".bzk-pet > img{opacity:1 !important}"
       ".bzk-win{display:none !important}"
-      ".bzk-rm > video{display:none !important}}")
+      "#my-overlay .bzk-rm > video{display:none !important}}")
     return "\n".join(L) + "\n"
 
 
@@ -857,7 +862,7 @@ It is long and light so that a leak would be obvious.</p>
 """
 
 
-def preview(bodytext):
+def preview(bodytext, tag=""):
     pad = "".join("<p>Host page filler line %d. The overlay must hide all of "
                   "this.</p>\n" % i for i in range(1, 61))
     return ('<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
@@ -867,7 +872,7 @@ def preview(bodytext):
             "font:16px/1.5 Georgia,serif}</style></head><body>\n"
             + FILLER + pad
             + "\n<!-- ==== paste body below (all urls local) ==== -->\n"
-            + '<link rel="stylesheet" href="profile.css">\n'
+            + '<link rel="stylesheet" href="profile%s.css">\n' % tag
             + bodytext + "\n</body></html>\n")
 
 
@@ -926,6 +931,10 @@ def main(argv=None):
     global REF
     argv = list(sys.argv[1:] if argv is None else argv)
     petfile = os.path.join(HERE, "pets.txt")
+    # --tag -20 writes profile-20.html / profile-20.css / preview-20.html,
+    # so the twenty-pet scale build sits beside the one that ships without
+    # overwriting it.
+    tag = ""
     while argv:
         if argv[0] in ("--ref", "-r") and len(argv) > 1:
             REF = argv[1]; del argv[:2]
@@ -935,8 +944,12 @@ def main(argv=None):
             petfile = argv[1]; del argv[:2]
         elif argv[0].startswith("--pets="):
             petfile = argv[0].split("=", 1)[1]; del argv[:1]
+        elif argv[0] == "--tag" and len(argv) > 1:
+            tag = argv[1]; del argv[:2]
+        elif argv[0].startswith("--tag="):
+            tag = argv[0].split("=", 1)[1]; del argv[:1]
         else:
-            sys.exit("usage: build.py [--pets FILE] [--ref REF]")
+            sys.exit("usage: build.py [--pets FILE] [--ref REF] [--tag TAG]")
 
     pets, warn = read_pets(petfile)
     if not pets:
@@ -952,13 +965,14 @@ def main(argv=None):
         print("WARNING:", w)
 
     css = build_css(pets, man, rooms, order)
-    paste = '<link rel="stylesheet" href="%sprofile.css">\n%s\n' \
-            % (cdn_base(), body(pets, man, rooms, order, local=False))
+    paste = '<link rel="stylesheet" href="%sprofile%s.css">\n%s\n' \
+            % (cdn_base(), tag, body(pets, man, rooms, order, local=False))
     check_paste(paste)
 
-    for name, text in (("profile.css", css), ("profile.html", paste),
-                       ("preview.html",
-                        preview(body(pets, man, rooms, order, local=True)))):
+    for name, text in (("profile%s.css" % tag, css),
+                       ("profile%s.html" % tag, paste),
+                       ("preview%s.html" % tag,
+                        preview(body(pets, man, rooms, order, local=True), tag))):
         with open(os.path.join(HERE, name), "w", encoding="utf-8") as f:
             f.write(text)
 
@@ -971,20 +985,20 @@ def main(argv=None):
     bar = 0
     for f in sorted({p["key"]: p for p in pets}):
         q = [p for p in pets if p["key"] == f][0]
-        for tag in ("L", "P"):
+        for tg in ("L", "P"):
             for st in ("ink", "lit"):
-                u = (q["bar"].get(tag) or {}).get(st)
+                u = (q["bar"].get(tg) or {}).get(st)
                 if u:
                     bar += os.path.getsize(os.path.join(HERE, u))
     print("pets: %d   rooms shipped: %d (%s)"
           % (len(pets), len(order), ", ".join(order)))
     for k in order:
         e = rooms[k]
-        print("  room %-10s %6.1f KB  poster %5.1f KB  %s frames  wrap %s "
-              "<= max-adj %s  %s"
+        print("  room %-10s %7.1f KB  poster %5.1f KB  %s frames  "
+              "median step %s  wrap %s  worst step %s (%sx median)  %s"
               % (k, e["mp4_bytes"] / 1024.0, e.get("poster_bytes", 0) / 1024.0,
-                 e.get("frames"), e.get("wrap_diff"), e.get("max_adj_diff"),
-                 e.get("loop")))
+                 e.get("frames"), e.get("median_adj"), e.get("wrap_diff"),
+                 e.get("max_adj_diff"), e.get("pop_x"), e.get("loop")))
     for k, (s, c) in sorted(sheets.items()):
         print("  sheet %-30s %6.1f KB  closed %5.1f KB" % (k, s / 1024.0, c / 1024.0))
     print("loops        : %.2f MB  posters %.0f KB  bar plates %.0f KB  "
@@ -994,11 +1008,11 @@ def main(argv=None):
     chars = len(paste)
     each = (len(body(pets, man, rooms, order)) -
             (len(body(pets[:-1], man, rooms, order)) if len(pets) > 1 else 0))
-    print("profile.html : %d characters (limit 35000)" % chars)
+    print("profile%s.html : %d characters (limit 35000)" % (tag, chars))
     print("               %d characters for each pet; about %d at 20, %d at %d"
           % (each, chars + each * (20 - len(pets)),
              chars + each * (MAXPETS - len(pets)), MAXPETS))
-    print("profile.css  : %d bytes" % len(css.encode("utf-8")))
+    print("profile%s.css  : %d bytes" % (tag, len(css.encode("utf-8"))))
     if chars > 30000:
         print("WARNING: paste is close to the 35,000 character limit")
 

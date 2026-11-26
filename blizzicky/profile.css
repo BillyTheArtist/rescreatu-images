@@ -31,34 +31,6 @@
 @starting-style{.bzk-pa.f5:target ~ .bzk-stage .bzk-rm.m-cathedral{opacity:0}}
 .bzk-pa.f6:target ~ .bzk-stage .bzk-rm.m-water{display:block;opacity:1}
 @starting-style{.bzk-pa.f6:target ~ .bzk-stage .bzk-rm.m-water{opacity:0}}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-rm.m-sky{display:block;opacity:1}
-@starting-style{.bzk-pa.f7:target ~ .bzk-stage .bzk-rm.m-sky{opacity:0}}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-rm.m-void{display:block;opacity:1}
-@starting-style{.bzk-pa.f8:target ~ .bzk-stage .bzk-rm.m-void{opacity:0}}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-rm.m-geode{display:block;opacity:1}
-@starting-style{.bzk-pa.f9:target ~ .bzk-stage .bzk-rm.m-geode{opacity:0}}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-rm.m-garden{display:block;opacity:1}
-@starting-style{.bzk-pa.f10:target ~ .bzk-stage .bzk-rm.m-garden{opacity:0}}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-rm.m-cathedral{display:block;opacity:1}
-@starting-style{.bzk-pa.f11:target ~ .bzk-stage .bzk-rm.m-cathedral{opacity:0}}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-rm.m-water{display:block;opacity:1}
-@starting-style{.bzk-pa.f12:target ~ .bzk-stage .bzk-rm.m-water{opacity:0}}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-rm.m-sky{display:block;opacity:1}
-@starting-style{.bzk-pa.f13:target ~ .bzk-stage .bzk-rm.m-sky{opacity:0}}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-rm.m-void{display:block;opacity:1}
-@starting-style{.bzk-pa.f14:target ~ .bzk-stage .bzk-rm.m-void{opacity:0}}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-rm.m-geode{display:block;opacity:1}
-@starting-style{.bzk-pa.f15:target ~ .bzk-stage .bzk-rm.m-geode{opacity:0}}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-rm.m-garden{display:block;opacity:1}
-@starting-style{.bzk-pa.f16:target ~ .bzk-stage .bzk-rm.m-garden{opacity:0}}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-rm.m-cathedral{display:block;opacity:1}
-@starting-style{.bzk-pa.f17:target ~ .bzk-stage .bzk-rm.m-cathedral{opacity:0}}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-rm.m-water{display:block;opacity:1}
-@starting-style{.bzk-pa.f18:target ~ .bzk-stage .bzk-rm.m-water{opacity:0}}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-rm.m-sky{display:block;opacity:1}
-@starting-style{.bzk-pa.f19:target ~ .bzk-stage .bzk-rm.m-sky{opacity:0}}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-rm.m-void{display:block;opacity:1}
-@starting-style{.bzk-pa.f20:target ~ .bzk-stage .bzk-rm.m-void{opacity:0}}
 .bzk-row{position:absolute;left:50%;top:var(--cy);width:0;height:0;z-index:5}
 .bzk-pet{position:absolute;left:calc(var(--sz) / -2);top:calc(var(--sz) / -2);width:var(--sz);height:var(--sz);display:none;transform:translateX(var(--x,0px)) scale(var(--s,1));opacity:var(--o,1);will-change:transform;transition:transform var(--slide) cubic-bezier(.3,.7,.2,1),opacity var(--slide) linear}
 .bzk-pet > u,.bzk-pet > span,.bzk-pet > img{position:absolute;top:0;left:0;width:var(--sz);height:var(--sz);display:block}
@@ -185,104 +157,6 @@
 .bzk-pet:nth-child(6) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
 .bzk-bp.n6{background-image:url(plates/b-L-ink-37-albino-effect-frostlight.webp)}
 @media (max-width:620px){.bzk-bp.n6{background-image:url(plates/b-P-ink-37-albino-effect-frostlight.webp)}}
-.bzk-pet:nth-child(7) > u{background-image:url(reveal/7-ginger-effect-derp-baby-closed.webp)}
-.bzk-pet:nth-child(7) .bzk-sh{background-image:url(reveal/7-ginger-effect-derp-baby.webp)}
-.bzk-pet:nth-child(7){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(7) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(7) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n7{background-image:url(plates/b-L-ink-7-ginger-effect-derp-baby.webp)}
-@media (max-width:620px){.bzk-bp.n7{background-image:url(plates/b-P-ink-7-ginger-effect-derp-baby.webp)}}
-.bzk-pet:nth-child(8) > u{background-image:url(reveal/30-black-effect-undead-closed.webp)}
-.bzk-pet:nth-child(8) .bzk-sh{background-image:url(reveal/30-black-effect-undead.webp)}
-.bzk-pet:nth-child(8){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(8) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(8) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n8{background-image:url(plates/b-L-ink-30-black-effect-undead.webp)}
-@media (max-width:620px){.bzk-bp.n8{background-image:url(plates/b-P-ink-30-black-effect-undead.webp)}}
-.bzk-pet:nth-child(9) > u{background-image:url(reveal/45-albino-effect-stardust-closed.webp)}
-.bzk-pet:nth-child(9) .bzk-sh{background-image:url(reveal/45-albino-effect-stardust.webp)}
-.bzk-pet:nth-child(9){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(9) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(9) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n9{background-image:url(plates/b-L-ink-45-albino-effect-stardust.webp)}
-@media (max-width:620px){.bzk-bp.n9{background-image:url(plates/b-P-ink-45-albino-effect-stardust.webp)}}
-.bzk-pet:nth-child(10) > u{background-image:url(reveal/71-albino-effect-derp-closed.webp)}
-.bzk-pet:nth-child(10) .bzk-sh{background-image:url(reveal/71-albino-effect-derp.webp)}
-.bzk-pet:nth-child(10){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(10) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(10) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n10{background-image:url(plates/b-L-ink-71-albino-effect-derp.webp)}
-@media (max-width:620px){.bzk-bp.n10{background-image:url(plates/b-P-ink-71-albino-effect-derp.webp)}}
-.bzk-pet:nth-child(11) > u{background-image:url(reveal/33-rainbow-effect-cosmic-closed.webp)}
-.bzk-pet:nth-child(11) .bzk-sh{background-image:url(reveal/33-rainbow-effect-cosmic.webp)}
-.bzk-pet:nth-child(11){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(11) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(11) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n11{background-image:url(plates/b-L-ink-33-rainbow-effect-cosmic.webp)}
-@media (max-width:620px){.bzk-bp.n11{background-image:url(plates/b-P-ink-33-rainbow-effect-cosmic.webp)}}
-.bzk-pet:nth-child(12) > u{background-image:url(reveal/37-albino-effect-frostlight-closed.webp)}
-.bzk-pet:nth-child(12) .bzk-sh{background-image:url(reveal/37-albino-effect-frostlight.webp)}
-.bzk-pet:nth-child(12){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(12) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(12) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n12{background-image:url(plates/b-L-ink-37-albino-effect-frostlight.webp)}
-@media (max-width:620px){.bzk-bp.n12{background-image:url(plates/b-P-ink-37-albino-effect-frostlight.webp)}}
-.bzk-pet:nth-child(13) > u{background-image:url(reveal/7-ginger-effect-derp-baby-closed.webp)}
-.bzk-pet:nth-child(13) .bzk-sh{background-image:url(reveal/7-ginger-effect-derp-baby.webp)}
-.bzk-pet:nth-child(13){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(13) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(13) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n13{background-image:url(plates/b-L-ink-7-ginger-effect-derp-baby.webp)}
-@media (max-width:620px){.bzk-bp.n13{background-image:url(plates/b-P-ink-7-ginger-effect-derp-baby.webp)}}
-.bzk-pet:nth-child(14) > u{background-image:url(reveal/30-black-effect-undead-closed.webp)}
-.bzk-pet:nth-child(14) .bzk-sh{background-image:url(reveal/30-black-effect-undead.webp)}
-.bzk-pet:nth-child(14){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(14) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(14) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n14{background-image:url(plates/b-L-ink-30-black-effect-undead.webp)}
-@media (max-width:620px){.bzk-bp.n14{background-image:url(plates/b-P-ink-30-black-effect-undead.webp)}}
-.bzk-pet:nth-child(15) > u{background-image:url(reveal/45-albino-effect-stardust-closed.webp)}
-.bzk-pet:nth-child(15) .bzk-sh{background-image:url(reveal/45-albino-effect-stardust.webp)}
-.bzk-pet:nth-child(15){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(15) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(15) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n15{background-image:url(plates/b-L-ink-45-albino-effect-stardust.webp)}
-@media (max-width:620px){.bzk-bp.n15{background-image:url(plates/b-P-ink-45-albino-effect-stardust.webp)}}
-.bzk-pet:nth-child(16) > u{background-image:url(reveal/71-albino-effect-derp-closed.webp)}
-.bzk-pet:nth-child(16) .bzk-sh{background-image:url(reveal/71-albino-effect-derp.webp)}
-.bzk-pet:nth-child(16){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(16) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(16) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n16{background-image:url(plates/b-L-ink-71-albino-effect-derp.webp)}
-@media (max-width:620px){.bzk-bp.n16{background-image:url(plates/b-P-ink-71-albino-effect-derp.webp)}}
-.bzk-pet:nth-child(17) > u{background-image:url(reveal/33-rainbow-effect-cosmic-closed.webp)}
-.bzk-pet:nth-child(17) .bzk-sh{background-image:url(reveal/33-rainbow-effect-cosmic.webp)}
-.bzk-pet:nth-child(17){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(17) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(17) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n17{background-image:url(plates/b-L-ink-33-rainbow-effect-cosmic.webp)}
-@media (max-width:620px){.bzk-bp.n17{background-image:url(plates/b-P-ink-33-rainbow-effect-cosmic.webp)}}
-.bzk-pet:nth-child(18) > u{background-image:url(reveal/37-albino-effect-frostlight-closed.webp)}
-.bzk-pet:nth-child(18) .bzk-sh{background-image:url(reveal/37-albino-effect-frostlight.webp)}
-.bzk-pet:nth-child(18){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(18) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(18) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n18{background-image:url(plates/b-L-ink-37-albino-effect-frostlight.webp)}
-@media (max-width:620px){.bzk-bp.n18{background-image:url(plates/b-P-ink-37-albino-effect-frostlight.webp)}}
-.bzk-pet:nth-child(19) > u{background-image:url(reveal/7-ginger-effect-derp-baby-closed.webp)}
-.bzk-pet:nth-child(19) .bzk-sh{background-image:url(reveal/7-ginger-effect-derp-baby.webp)}
-.bzk-pet:nth-child(19){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(19) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(19) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n19{background-image:url(plates/b-L-ink-7-ginger-effect-derp-baby.webp)}
-@media (max-width:620px){.bzk-bp.n19{background-image:url(plates/b-P-ink-7-ginger-effect-derp-baby.webp)}}
-.bzk-pet:nth-child(20) > u{background-image:url(reveal/30-black-effect-undead-closed.webp)}
-.bzk-pet:nth-child(20) .bzk-sh{background-image:url(reveal/30-black-effect-undead.webp)}
-.bzk-pet:nth-child(20){--rc:8;--rr:2;--T:1.333s;--rxe:calc(var(--sz) * 7 * -1);--rye:calc(var(--sz) * 1 * -1)}
-.bzk-pet:nth-child(20) .bzk-sh{animation-duration:calc(var(--T) / 2);animation-timing-function:steps(8,jump-none);animation-iteration-count:2}
-.bzk-pet:nth-child(20) .bzk-sr{animation-duration:var(--T);animation-timing-function:steps(2,jump-none);animation-iteration-count:1}
-.bzk-bp.n20{background-image:url(plates/b-L-ink-30-black-effect-undead.webp)}
-@media (max-width:620px){.bzk-bp.n20{background-image:url(plates/b-P-ink-30-black-effect-undead.webp)}}
 .bzk-stage{--lit:url(plates/b-L-lit-7-ginger-effect-derp-baby.webp)}
 .bzk-pa.f1:target ~ .bzk-stage{--lit:url(plates/b-L-lit-7-ginger-effect-derp-baby.webp)}
 @media (max-width:620px){.bzk-pa.f1:target ~ .bzk-stage{--lit:url(plates/b-P-lit-7-ginger-effect-derp-baby.webp)}}
@@ -296,50 +170,20 @@
 @media (max-width:620px){.bzk-pa.f5:target ~ .bzk-stage{--lit:url(plates/b-P-lit-33-rainbow-effect-cosmic.webp)}}
 .bzk-pa.f6:target ~ .bzk-stage{--lit:url(plates/b-L-lit-37-albino-effect-frostlight.webp)}
 @media (max-width:620px){.bzk-pa.f6:target ~ .bzk-stage{--lit:url(plates/b-P-lit-37-albino-effect-frostlight.webp)}}
-.bzk-pa.f7:target ~ .bzk-stage{--lit:url(plates/b-L-lit-7-ginger-effect-derp-baby.webp)}
-@media (max-width:620px){.bzk-pa.f7:target ~ .bzk-stage{--lit:url(plates/b-P-lit-7-ginger-effect-derp-baby.webp)}}
-.bzk-pa.f8:target ~ .bzk-stage{--lit:url(plates/b-L-lit-30-black-effect-undead.webp)}
-@media (max-width:620px){.bzk-pa.f8:target ~ .bzk-stage{--lit:url(plates/b-P-lit-30-black-effect-undead.webp)}}
-.bzk-pa.f9:target ~ .bzk-stage{--lit:url(plates/b-L-lit-45-albino-effect-stardust.webp)}
-@media (max-width:620px){.bzk-pa.f9:target ~ .bzk-stage{--lit:url(plates/b-P-lit-45-albino-effect-stardust.webp)}}
-.bzk-pa.f10:target ~ .bzk-stage{--lit:url(plates/b-L-lit-71-albino-effect-derp.webp)}
-@media (max-width:620px){.bzk-pa.f10:target ~ .bzk-stage{--lit:url(plates/b-P-lit-71-albino-effect-derp.webp)}}
-.bzk-pa.f11:target ~ .bzk-stage{--lit:url(plates/b-L-lit-33-rainbow-effect-cosmic.webp)}
-@media (max-width:620px){.bzk-pa.f11:target ~ .bzk-stage{--lit:url(plates/b-P-lit-33-rainbow-effect-cosmic.webp)}}
-.bzk-pa.f12:target ~ .bzk-stage{--lit:url(plates/b-L-lit-37-albino-effect-frostlight.webp)}
-@media (max-width:620px){.bzk-pa.f12:target ~ .bzk-stage{--lit:url(plates/b-P-lit-37-albino-effect-frostlight.webp)}}
-.bzk-pa.f13:target ~ .bzk-stage{--lit:url(plates/b-L-lit-7-ginger-effect-derp-baby.webp)}
-@media (max-width:620px){.bzk-pa.f13:target ~ .bzk-stage{--lit:url(plates/b-P-lit-7-ginger-effect-derp-baby.webp)}}
-.bzk-pa.f14:target ~ .bzk-stage{--lit:url(plates/b-L-lit-30-black-effect-undead.webp)}
-@media (max-width:620px){.bzk-pa.f14:target ~ .bzk-stage{--lit:url(plates/b-P-lit-30-black-effect-undead.webp)}}
-.bzk-pa.f15:target ~ .bzk-stage{--lit:url(plates/b-L-lit-45-albino-effect-stardust.webp)}
-@media (max-width:620px){.bzk-pa.f15:target ~ .bzk-stage{--lit:url(plates/b-P-lit-45-albino-effect-stardust.webp)}}
-.bzk-pa.f16:target ~ .bzk-stage{--lit:url(plates/b-L-lit-71-albino-effect-derp.webp)}
-@media (max-width:620px){.bzk-pa.f16:target ~ .bzk-stage{--lit:url(plates/b-P-lit-71-albino-effect-derp.webp)}}
-.bzk-pa.f17:target ~ .bzk-stage{--lit:url(plates/b-L-lit-33-rainbow-effect-cosmic.webp)}
-@media (max-width:620px){.bzk-pa.f17:target ~ .bzk-stage{--lit:url(plates/b-P-lit-33-rainbow-effect-cosmic.webp)}}
-.bzk-pa.f18:target ~ .bzk-stage{--lit:url(plates/b-L-lit-37-albino-effect-frostlight.webp)}
-@media (max-width:620px){.bzk-pa.f18:target ~ .bzk-stage{--lit:url(plates/b-P-lit-37-albino-effect-frostlight.webp)}}
-.bzk-pa.f19:target ~ .bzk-stage{--lit:url(plates/b-L-lit-7-ginger-effect-derp-baby.webp)}
-@media (max-width:620px){.bzk-pa.f19:target ~ .bzk-stage{--lit:url(plates/b-P-lit-7-ginger-effect-derp-baby.webp)}}
-.bzk-pa.f20:target ~ .bzk-stage{--lit:url(plates/b-L-lit-30-black-effect-undead.webp)}
-@media (max-width:620px){.bzk-pa.f20:target ~ .bzk-stage{--lit:url(plates/b-P-lit-30-black-effect-undead.webp)}}
 @media (max-width:620px){.bzk-stage{--lit:url(plates/b-P-lit-7-ginger-effect-derp-baby.webp)}}
 .bzk-fo{visibility:hidden;--run:none}
 .bzk-stage .bzk-pet:nth-child(1){display:block;--x:0px;--s:1.000}
 .bzk-stage .bzk-pet:nth-child(2){display:block;--x:200px;--s:0.580}
 .bzk-stage .bzk-pet:nth-child(3){display:block;--x:350px;--s:0.580}
-.bzk-stage .bzk-pet:nth-child(4){display:block;--x:500px;--s:0.580}
-.bzk-stage .bzk-pet:nth-child(18){display:block;--x:-500px;--s:0.580}
-.bzk-stage .bzk-pet:nth-child(19){display:block;--x:-350px;--s:0.580}
-.bzk-stage .bzk-pet:nth-child(20){display:block;--x:-200px;--s:0.580}
+.bzk-stage .bzk-pet:nth-child(5){display:block;--x:-350px;--s:0.580}
+.bzk-stage .bzk-pet:nth-child(6){display:block;--x:-200px;--s:0.580}
 .bzk-stage .bzk-pet:nth-child(1){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-stage .bzk-pet:nth-child(1) > img{opacity:0}
 .bzk-stage .bzk-pet:nth-child(1) .bzk-win{display:block}
 .bzk-stage .n1{visibility:visible;--run:bzk-type}
 .bzk-stage .bzk-bp.n1{display:block}
 .bzk-stage{--trot:170.3;--tsat:1.86}
-.bzk-stage .bzk-pf{background-image:url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp)}
+.bzk-stage .bzk-pf{background-image:url(reveal/37-albino-effect-frostlight.webp),url(plates/b-L-ink-37-albino-effect-frostlight.webp),url(plates/b-L-lit-37-albino-effect-frostlight.webp),url(rooms/poster-water.webp),url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp)}
 .bzk-pa:target ~ .bzk-stage .bzk-pet{display:none;--flt:var(--tf);--hon:none;--rvx:none;--rvy:none}
 .bzk-pa:target ~ .bzk-stage .bzk-pet > img{opacity:1}
 .bzk-pa:target ~ .bzk-stage .bzk-win{display:none}
@@ -349,24 +193,20 @@
 .bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:0px;--s:1.000}
 .bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:200px;--s:0.580}
 .bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:350px;--s:0.580}
-.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:500px;--s:0.580}
-.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(18){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(19){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(20){display:block;--x:-200px;--s:0.580}
+.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:-350px;--s:0.580}
+.bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:-200px;--s:0.580}
 .bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(1){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(1) > img{opacity:0}
 .bzk-pa.f1:target ~ .bzk-stage .bzk-pet:nth-child(1) .bzk-win{display:block}
 .bzk-pa.f1:target ~ .bzk-stage .n1{visibility:visible;--run:bzk-type}
 .bzk-pa.f1:target ~ .bzk-stage .bzk-bp.n1{display:block}
 .bzk-pa.f1:target ~ .bzk-stage{--trot:170.3;--tsat:1.86}
-.bzk-pa.f1:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp)}
+.bzk-pa.f1:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/37-albino-effect-frostlight.webp),url(plates/b-L-ink-37-albino-effect-frostlight.webp),url(plates/b-L-lit-37-albino-effect-frostlight.webp),url(rooms/poster-water.webp),url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp)}
 .bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:-200px;--s:0.580}
 .bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:0px;--s:1.000}
 .bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:200px;--s:0.580}
 .bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:350px;--s:0.580}
-.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:500px;--s:0.580}
-.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(19){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(20){display:block;--x:-350px;--s:0.580}
+.bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:-350px;--s:0.580}
 .bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(2){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(2) > img{opacity:0}
 .bzk-pa.f2:target ~ .bzk-stage .bzk-pet:nth-child(2) .bzk-win{display:block}
@@ -379,8 +219,6 @@
 .bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:0px;--s:1.000}
 .bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:200px;--s:0.580}
 .bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:350px;--s:0.580}
-.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:500px;--s:0.580}
-.bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(20){display:block;--x:-500px;--s:0.580}
 .bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(3){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(3) > img{opacity:0}
 .bzk-pa.f3:target ~ .bzk-stage .bzk-pet:nth-child(3) .bzk-win{display:block}
@@ -388,13 +226,11 @@
 .bzk-pa.f3:target ~ .bzk-stage .bzk-bp.n3{display:block}
 .bzk-pa.f3:target ~ .bzk-stage{--trot:267.6;--tsat:1.86}
 .bzk-pa.f3:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp),url(reveal/71-albino-effect-derp.webp),url(plates/b-L-ink-71-albino-effect-derp.webp),url(plates/b-L-lit-71-albino-effect-derp.webp),url(rooms/poster-garden.webp)}
-.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:-500px;--s:0.580}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:-350px;--s:0.580}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:-200px;--s:0.580}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:0px;--s:1.000}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:200px;--s:0.580}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:350px;--s:0.580}
-.bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(7){display:block;--x:500px;--s:0.580}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(4){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(4) > img{opacity:0}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-pet:nth-child(4) .bzk-win{display:block}
@@ -402,13 +238,11 @@
 .bzk-pa.f4:target ~ .bzk-stage .bzk-bp.n4{display:block}
 .bzk-pa.f4:target ~ .bzk-stage{--trot:65.7;--tsat:1.86}
 .bzk-pa.f4:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/45-albino-effect-stardust.webp),url(plates/b-L-ink-45-albino-effect-stardust.webp),url(plates/b-L-lit-45-albino-effect-stardust.webp),url(rooms/poster-geode.webp),url(reveal/33-rainbow-effect-cosmic.webp),url(plates/b-L-ink-33-rainbow-effect-cosmic.webp),url(plates/b-L-lit-33-rainbow-effect-cosmic.webp),url(rooms/poster-cathedral.webp)}
-.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:-500px;--s:0.580}
+.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:350px;--s:0.580}
 .bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:-350px;--s:0.580}
 .bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:-200px;--s:0.580}
 .bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:0px;--s:1.000}
 .bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:200px;--s:0.580}
-.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(7){display:block;--x:350px;--s:0.580}
-.bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(8){display:block;--x:500px;--s:0.580}
 .bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(5){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(5) > img{opacity:0}
 .bzk-pa.f5:target ~ .bzk-stage .bzk-pet:nth-child(5) .bzk-win{display:block}
@@ -416,13 +250,11 @@
 .bzk-pa.f5:target ~ .bzk-stage .bzk-bp.n5{display:block}
 .bzk-pa.f5:target ~ .bzk-stage{--trot:-6.3;--tsat:1.86}
 .bzk-pa.f5:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/71-albino-effect-derp.webp),url(plates/b-L-ink-71-albino-effect-derp.webp),url(plates/b-L-lit-71-albino-effect-derp.webp),url(rooms/poster-garden.webp),url(reveal/37-albino-effect-frostlight.webp),url(plates/b-L-ink-37-albino-effect-frostlight.webp),url(plates/b-L-lit-37-albino-effect-frostlight.webp),url(rooms/poster-water.webp)}
-.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:-500px;--s:0.580}
+.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:200px;--s:0.580}
+.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:350px;--s:0.580}
 .bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:-350px;--s:0.580}
 .bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:-200px;--s:0.580}
 .bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:0px;--s:1.000}
-.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(7){display:block;--x:200px;--s:0.580}
-.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(8){display:block;--x:350px;--s:0.580}
-.bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(9){display:block;--x:500px;--s:0.580}
 .bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(6){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
 .bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(6) > img{opacity:0}
 .bzk-pa.f6:target ~ .bzk-stage .bzk-pet:nth-child(6) .bzk-win{display:block}
@@ -430,202 +262,6 @@
 .bzk-pa.f6:target ~ .bzk-stage .bzk-bp.n6{display:block}
 .bzk-pa.f6:target ~ .bzk-stage{--trot:141.5;--tsat:1.86}
 .bzk-pa.f6:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/33-rainbow-effect-cosmic.webp),url(plates/b-L-ink-33-rainbow-effect-cosmic.webp),url(plates/b-L-lit-33-rainbow-effect-cosmic.webp),url(rooms/poster-cathedral.webp),url(reveal/7-ginger-effect-derp-baby.webp),url(plates/b-L-ink-7-ginger-effect-derp-baby.webp),url(plates/b-L-lit-7-ginger-effect-derp-baby.webp),url(rooms/poster-sky.webp)}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-pet:nth-child(4){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-pet:nth-child(7){display:block;--x:0px;--s:1.000}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-pet:nth-child(8){display:block;--x:200px;--s:0.580}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-pet:nth-child(9){display:block;--x:350px;--s:0.580}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-pet:nth-child(10){display:block;--x:500px;--s:0.580}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-pet:nth-child(7){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-pet:nth-child(7) > img{opacity:0}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-pet:nth-child(7) .bzk-win{display:block}
-.bzk-pa.f7:target ~ .bzk-stage .n7{visibility:visible;--run:bzk-type}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-bp.n7{display:block}
-.bzk-pa.f7:target ~ .bzk-stage{--trot:170.3;--tsat:1.86}
-.bzk-pa.f7:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/37-albino-effect-frostlight.webp),url(plates/b-L-ink-37-albino-effect-frostlight.webp),url(plates/b-L-lit-37-albino-effect-frostlight.webp),url(rooms/poster-water.webp),url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp)}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-pet:nth-child(5){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-pet:nth-child(7){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-pet:nth-child(8){display:block;--x:0px;--s:1.000}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-pet:nth-child(9){display:block;--x:200px;--s:0.580}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-pet:nth-child(10){display:block;--x:350px;--s:0.580}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-pet:nth-child(11){display:block;--x:500px;--s:0.580}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-pet:nth-child(8){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-pet:nth-child(8) > img{opacity:0}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-pet:nth-child(8) .bzk-win{display:block}
-.bzk-pa.f8:target ~ .bzk-stage .n8{visibility:visible;--run:bzk-type}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-bp.n8{display:block}
-.bzk-pa.f8:target ~ .bzk-stage{--trot:220.9;--tsat:1.86}
-.bzk-pa.f8:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/7-ginger-effect-derp-baby.webp),url(plates/b-L-ink-7-ginger-effect-derp-baby.webp),url(plates/b-L-lit-7-ginger-effect-derp-baby.webp),url(rooms/poster-sky.webp),url(reveal/45-albino-effect-stardust.webp),url(plates/b-L-ink-45-albino-effect-stardust.webp),url(plates/b-L-lit-45-albino-effect-stardust.webp),url(rooms/poster-geode.webp)}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-pet:nth-child(6){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-pet:nth-child(7){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-pet:nth-child(8){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-pet:nth-child(9){display:block;--x:0px;--s:1.000}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-pet:nth-child(10){display:block;--x:200px;--s:0.580}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-pet:nth-child(11){display:block;--x:350px;--s:0.580}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-pet:nth-child(12){display:block;--x:500px;--s:0.580}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-pet:nth-child(9){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-pet:nth-child(9) > img{opacity:0}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-pet:nth-child(9) .bzk-win{display:block}
-.bzk-pa.f9:target ~ .bzk-stage .n9{visibility:visible;--run:bzk-type}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-bp.n9{display:block}
-.bzk-pa.f9:target ~ .bzk-stage{--trot:267.6;--tsat:1.86}
-.bzk-pa.f9:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp),url(reveal/71-albino-effect-derp.webp),url(plates/b-L-ink-71-albino-effect-derp.webp),url(plates/b-L-lit-71-albino-effect-derp.webp),url(rooms/poster-garden.webp)}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-pet:nth-child(7){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-pet:nth-child(8){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-pet:nth-child(9){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-pet:nth-child(10){display:block;--x:0px;--s:1.000}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-pet:nth-child(11){display:block;--x:200px;--s:0.580}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-pet:nth-child(12){display:block;--x:350px;--s:0.580}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-pet:nth-child(13){display:block;--x:500px;--s:0.580}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-pet:nth-child(10){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-pet:nth-child(10) > img{opacity:0}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-pet:nth-child(10) .bzk-win{display:block}
-.bzk-pa.f10:target ~ .bzk-stage .n10{visibility:visible;--run:bzk-type}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-bp.n10{display:block}
-.bzk-pa.f10:target ~ .bzk-stage{--trot:65.7;--tsat:1.86}
-.bzk-pa.f10:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/45-albino-effect-stardust.webp),url(plates/b-L-ink-45-albino-effect-stardust.webp),url(plates/b-L-lit-45-albino-effect-stardust.webp),url(rooms/poster-geode.webp),url(reveal/33-rainbow-effect-cosmic.webp),url(plates/b-L-ink-33-rainbow-effect-cosmic.webp),url(plates/b-L-lit-33-rainbow-effect-cosmic.webp),url(rooms/poster-cathedral.webp)}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-pet:nth-child(8){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-pet:nth-child(9){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-pet:nth-child(10){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-pet:nth-child(11){display:block;--x:0px;--s:1.000}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-pet:nth-child(12){display:block;--x:200px;--s:0.580}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-pet:nth-child(13){display:block;--x:350px;--s:0.580}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-pet:nth-child(14){display:block;--x:500px;--s:0.580}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-pet:nth-child(11){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-pet:nth-child(11) > img{opacity:0}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-pet:nth-child(11) .bzk-win{display:block}
-.bzk-pa.f11:target ~ .bzk-stage .n11{visibility:visible;--run:bzk-type}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-bp.n11{display:block}
-.bzk-pa.f11:target ~ .bzk-stage{--trot:-6.3;--tsat:1.86}
-.bzk-pa.f11:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/71-albino-effect-derp.webp),url(plates/b-L-ink-71-albino-effect-derp.webp),url(plates/b-L-lit-71-albino-effect-derp.webp),url(rooms/poster-garden.webp),url(reveal/37-albino-effect-frostlight.webp),url(plates/b-L-ink-37-albino-effect-frostlight.webp),url(plates/b-L-lit-37-albino-effect-frostlight.webp),url(rooms/poster-water.webp)}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-pet:nth-child(9){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-pet:nth-child(10){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-pet:nth-child(11){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-pet:nth-child(12){display:block;--x:0px;--s:1.000}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-pet:nth-child(13){display:block;--x:200px;--s:0.580}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-pet:nth-child(14){display:block;--x:350px;--s:0.580}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-pet:nth-child(15){display:block;--x:500px;--s:0.580}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-pet:nth-child(12){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-pet:nth-child(12) > img{opacity:0}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-pet:nth-child(12) .bzk-win{display:block}
-.bzk-pa.f12:target ~ .bzk-stage .n12{visibility:visible;--run:bzk-type}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-bp.n12{display:block}
-.bzk-pa.f12:target ~ .bzk-stage{--trot:141.5;--tsat:1.86}
-.bzk-pa.f12:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/33-rainbow-effect-cosmic.webp),url(plates/b-L-ink-33-rainbow-effect-cosmic.webp),url(plates/b-L-lit-33-rainbow-effect-cosmic.webp),url(rooms/poster-cathedral.webp),url(reveal/7-ginger-effect-derp-baby.webp),url(plates/b-L-ink-7-ginger-effect-derp-baby.webp),url(plates/b-L-lit-7-ginger-effect-derp-baby.webp),url(rooms/poster-sky.webp)}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-pet:nth-child(10){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-pet:nth-child(11){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-pet:nth-child(12){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-pet:nth-child(13){display:block;--x:0px;--s:1.000}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-pet:nth-child(14){display:block;--x:200px;--s:0.580}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-pet:nth-child(15){display:block;--x:350px;--s:0.580}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-pet:nth-child(16){display:block;--x:500px;--s:0.580}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-pet:nth-child(13){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-pet:nth-child(13) > img{opacity:0}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-pet:nth-child(13) .bzk-win{display:block}
-.bzk-pa.f13:target ~ .bzk-stage .n13{visibility:visible;--run:bzk-type}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-bp.n13{display:block}
-.bzk-pa.f13:target ~ .bzk-stage{--trot:170.3;--tsat:1.86}
-.bzk-pa.f13:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/37-albino-effect-frostlight.webp),url(plates/b-L-ink-37-albino-effect-frostlight.webp),url(plates/b-L-lit-37-albino-effect-frostlight.webp),url(rooms/poster-water.webp),url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp)}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-pet:nth-child(11){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-pet:nth-child(12){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-pet:nth-child(13){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-pet:nth-child(14){display:block;--x:0px;--s:1.000}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-pet:nth-child(15){display:block;--x:200px;--s:0.580}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-pet:nth-child(16){display:block;--x:350px;--s:0.580}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-pet:nth-child(17){display:block;--x:500px;--s:0.580}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-pet:nth-child(14){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-pet:nth-child(14) > img{opacity:0}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-pet:nth-child(14) .bzk-win{display:block}
-.bzk-pa.f14:target ~ .bzk-stage .n14{visibility:visible;--run:bzk-type}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-bp.n14{display:block}
-.bzk-pa.f14:target ~ .bzk-stage{--trot:220.9;--tsat:1.86}
-.bzk-pa.f14:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/7-ginger-effect-derp-baby.webp),url(plates/b-L-ink-7-ginger-effect-derp-baby.webp),url(plates/b-L-lit-7-ginger-effect-derp-baby.webp),url(rooms/poster-sky.webp),url(reveal/45-albino-effect-stardust.webp),url(plates/b-L-ink-45-albino-effect-stardust.webp),url(plates/b-L-lit-45-albino-effect-stardust.webp),url(rooms/poster-geode.webp)}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-pet:nth-child(12){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-pet:nth-child(13){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-pet:nth-child(14){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-pet:nth-child(15){display:block;--x:0px;--s:1.000}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-pet:nth-child(16){display:block;--x:200px;--s:0.580}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-pet:nth-child(17){display:block;--x:350px;--s:0.580}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-pet:nth-child(18){display:block;--x:500px;--s:0.580}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-pet:nth-child(15){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-pet:nth-child(15) > img{opacity:0}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-pet:nth-child(15) .bzk-win{display:block}
-.bzk-pa.f15:target ~ .bzk-stage .n15{visibility:visible;--run:bzk-type}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-bp.n15{display:block}
-.bzk-pa.f15:target ~ .bzk-stage{--trot:267.6;--tsat:1.86}
-.bzk-pa.f15:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp),url(reveal/71-albino-effect-derp.webp),url(plates/b-L-ink-71-albino-effect-derp.webp),url(plates/b-L-lit-71-albino-effect-derp.webp),url(rooms/poster-garden.webp)}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-pet:nth-child(13){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-pet:nth-child(14){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-pet:nth-child(15){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-pet:nth-child(16){display:block;--x:0px;--s:1.000}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-pet:nth-child(17){display:block;--x:200px;--s:0.580}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-pet:nth-child(18){display:block;--x:350px;--s:0.580}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-pet:nth-child(19){display:block;--x:500px;--s:0.580}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-pet:nth-child(16){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-pet:nth-child(16) > img{opacity:0}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-pet:nth-child(16) .bzk-win{display:block}
-.bzk-pa.f16:target ~ .bzk-stage .n16{visibility:visible;--run:bzk-type}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-bp.n16{display:block}
-.bzk-pa.f16:target ~ .bzk-stage{--trot:65.7;--tsat:1.86}
-.bzk-pa.f16:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/45-albino-effect-stardust.webp),url(plates/b-L-ink-45-albino-effect-stardust.webp),url(plates/b-L-lit-45-albino-effect-stardust.webp),url(rooms/poster-geode.webp),url(reveal/33-rainbow-effect-cosmic.webp),url(plates/b-L-ink-33-rainbow-effect-cosmic.webp),url(plates/b-L-lit-33-rainbow-effect-cosmic.webp),url(rooms/poster-cathedral.webp)}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-pet:nth-child(14){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-pet:nth-child(15){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-pet:nth-child(16){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-pet:nth-child(17){display:block;--x:0px;--s:1.000}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-pet:nth-child(18){display:block;--x:200px;--s:0.580}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-pet:nth-child(19){display:block;--x:350px;--s:0.580}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-pet:nth-child(20){display:block;--x:500px;--s:0.580}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-pet:nth-child(17){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-pet:nth-child(17) > img{opacity:0}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-pet:nth-child(17) .bzk-win{display:block}
-.bzk-pa.f17:target ~ .bzk-stage .n17{visibility:visible;--run:bzk-type}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-bp.n17{display:block}
-.bzk-pa.f17:target ~ .bzk-stage{--trot:-6.3;--tsat:1.86}
-.bzk-pa.f17:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/71-albino-effect-derp.webp),url(plates/b-L-ink-71-albino-effect-derp.webp),url(plates/b-L-lit-71-albino-effect-derp.webp),url(rooms/poster-garden.webp),url(reveal/37-albino-effect-frostlight.webp),url(plates/b-L-ink-37-albino-effect-frostlight.webp),url(plates/b-L-lit-37-albino-effect-frostlight.webp),url(rooms/poster-water.webp)}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:500px;--s:0.580}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-pet:nth-child(15){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-pet:nth-child(16){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-pet:nth-child(17){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-pet:nth-child(18){display:block;--x:0px;--s:1.000}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-pet:nth-child(19){display:block;--x:200px;--s:0.580}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-pet:nth-child(20){display:block;--x:350px;--s:0.580}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-pet:nth-child(18){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-pet:nth-child(18) > img{opacity:0}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-pet:nth-child(18) .bzk-win{display:block}
-.bzk-pa.f18:target ~ .bzk-stage .n18{visibility:visible;--run:bzk-type}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-bp.n18{display:block}
-.bzk-pa.f18:target ~ .bzk-stage{--trot:141.5;--tsat:1.86}
-.bzk-pa.f18:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/33-rainbow-effect-cosmic.webp),url(plates/b-L-ink-33-rainbow-effect-cosmic.webp),url(plates/b-L-lit-33-rainbow-effect-cosmic.webp),url(rooms/poster-cathedral.webp),url(reveal/7-ginger-effect-derp-baby.webp),url(plates/b-L-ink-7-ginger-effect-derp-baby.webp),url(plates/b-L-lit-7-ginger-effect-derp-baby.webp),url(rooms/poster-sky.webp)}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:350px;--s:0.580}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:500px;--s:0.580}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-pet:nth-child(16){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-pet:nth-child(17){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-pet:nth-child(18){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-pet:nth-child(19){display:block;--x:0px;--s:1.000}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-pet:nth-child(20){display:block;--x:200px;--s:0.580}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-pet:nth-child(19){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-pet:nth-child(19) > img{opacity:0}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-pet:nth-child(19) .bzk-win{display:block}
-.bzk-pa.f19:target ~ .bzk-stage .n19{visibility:visible;--run:bzk-type}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-bp.n19{display:block}
-.bzk-pa.f19:target ~ .bzk-stage{--trot:170.3;--tsat:1.86}
-.bzk-pa.f19:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/37-albino-effect-frostlight.webp),url(plates/b-L-ink-37-albino-effect-frostlight.webp),url(plates/b-L-lit-37-albino-effect-frostlight.webp),url(rooms/poster-water.webp),url(reveal/30-black-effect-undead.webp),url(plates/b-L-ink-30-black-effect-undead.webp),url(plates/b-L-lit-30-black-effect-undead.webp),url(rooms/poster-void.webp)}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-pet:nth-child(1){display:block;--x:200px;--s:0.580}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-pet:nth-child(2){display:block;--x:350px;--s:0.580}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-pet:nth-child(3){display:block;--x:500px;--s:0.580}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-pet:nth-child(17){display:block;--x:-500px;--s:0.580}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-pet:nth-child(18){display:block;--x:-350px;--s:0.580}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-pet:nth-child(19){display:block;--x:-200px;--s:0.580}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-pet:nth-child(20){display:block;--x:0px;--s:1.000}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-pet:nth-child(20){--flt:none;--hon:bzk-hand;--rvx:bzk-rvx;--rvy:bzk-rvy}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-pet:nth-child(20) > img{opacity:0}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-pet:nth-child(20) .bzk-win{display:block}
-.bzk-pa.f20:target ~ .bzk-stage .n20{visibility:visible;--run:bzk-type}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-bp.n20{display:block}
-.bzk-pa.f20:target ~ .bzk-stage{--trot:220.9;--tsat:1.86}
-.bzk-pa.f20:target ~ .bzk-stage .bzk-pf{background-image:url(reveal/7-ginger-effect-derp-baby.webp),url(plates/b-L-ink-7-ginger-effect-derp-baby.webp),url(plates/b-L-lit-7-ginger-effect-derp-baby.webp),url(rooms/poster-sky.webp)}
 .bzk-stage .bzk-pet{--rvd:var(--boot)}
 .bzk-pa:target ~ .bzk-stage .bzk-pet{--rvd:0s}
 @media (max-width:620px){#my-overlay{--gap:124px;--step:74px;--near:.42;--cy:40%;--bbot:16px;--bw0:399px;--bh0:130px;--bs:.88}.bzk-nm b{font-size:21px}.bzk-nm i{width:9px;height:15px}}
@@ -633,4 +269,4 @@
 @media (min-width:621px) and (max-width:1100px){#my-overlay{--gap:150px;--step:104px;--near:.50}}
 @media (min-width:1101px) and (max-width:1320px){#my-overlay{--gap:174px;--step:126px;--near:.54}}
 @media (min-width:621px){#my-overlay{--bs:1}}
-@media (prefers-reduced-motion:reduce){#my-overlay *,#my-overlay *::before,#my-overlay *::after{animation:none !important;transition:none !important}#bzk-boot{opacity:0;visibility:hidden}.bzk-pet > img{opacity:1 !important}.bzk-win{display:none !important}.bzk-rm > video{display:none !important}}
+@media (prefers-reduced-motion:reduce){#my-overlay *,#my-overlay *::before,#my-overlay *::after{animation:none !important;transition:none !important}#bzk-boot{opacity:0;visibility:hidden}.bzk-pet > img{opacity:1 !important}.bzk-win{display:none !important}#my-overlay .bzk-rm > video{display:none !important}}
