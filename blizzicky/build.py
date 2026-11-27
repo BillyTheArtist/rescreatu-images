@@ -104,30 +104,21 @@ NAME_WIDE = 0.70  # a name is at most this much of the viewport
 NAME_HEAVY = 4    # ramp index at which a cell moves to the bright layer
 NAME_FONT = "fonts/unifrakturcook-latin-700-normal.woff2"
 
-# ---- the sweep between rooms --------------------------------------------- #
-# The heavy build swept the screen cell by cell between environments and the
-# lite build had cut it to a crossfade. It is back as TWO compositor jobs and
-# one small picture: the incoming room is revealed by a clip-path animated in
-# steps, and a band of churning glyph cells rides the boundary on transform.
-# It runs ONLY when the room actually changes - the room element's own
-# display:none -> block restarts the clip, and the band's animation-name is
-# the KIND, so two pets in the same room leave both untouched.
-SW_FILE = "sweep.png"
-SW_CELL = (7, 13)
-SW_COLS = 32       # the texture tiles across the band every 224 px
-SW_ROWS = 18       # one frame is 18 rows, 234 px
-SW_FRAMES = 8      # EIGHT DIFFERENT FRAMES, stacked into one sheet
-SW_RUN = "1.3s"
-SW_STEPS = 96      # the slanted edge advances a cell at a time
-SW_CHURN = ".085s"  # the portfolio's churn: about twelve frames a second
-# The portfolio's morph constants: tilt .34 (the front line moves .34 of the
-# viewport's height sideways over its full height, which is 18.78 degrees off
-# vertical at every aspect ratio, since both terms are in vh), band .24 of the
-# screen, jitter .22 on the per-cell alpha.
-SW_TILT = 34       # vh
-SW_SKEW = 18.78    # degrees, atan(.34)
-SW_BAND = 24       # vw
-SW_JITTER = 0.22
+# ---- the morph between rooms --------------------------------------------- #
+# THE HEAVY BUILD'S OWN MORPH, PORTED. fx/ carries the sprite sheets his
+# renderer's glyph pass produced from GMORPH (dur 1.40, spread .80, jit .22,
+# width .24, tilt .34, churn .085): twenty-four frames of a one-pixel-per-cell
+# mask stacked into one sheet, forward and backward, in four window sizes. The
+# incoming room wears the FRONT sheet as a mask and is uncovered cell by cell;
+# a band of churning characters wears the BAND sheet and rides the front. The
+# sheet is stretched one frame to a windowful, so stepping it is a
+# mask-position from 0% to 100% in steps(frames, jump-none) and nothing else.
+FX_DIR = "fx/"
+CHURN_ITER = 3    # .68 s a turn, so three turns cover the 1.4 s morph
+
+ROOM_DIR = "rooms/"
+PLATE_DIR = "plates/"
+REVEAL_DIR = "reveal/"
 
 # the kind's four-stop ramp, as in the heavy build (hue, lightness, sat mult)
 ENV = {
@@ -148,20 +139,15 @@ SLOTS = [("HATCHERY", PREFIX + "/hatchery/"),
          ("RANCHER", PREFIX + "/ranchershop/")]
 
 # ---- the reveal sheet, re-rendered small --------------------------------- #
-# MEASURED, 2026-11-25: at the heavy build's 64 frames / scale 1 a sheet is
-# 511 KB and the worst of the six 832 KB, and one sheet is what a move
-# fetches. 16 frames at scale 1 with a lossy alpha channel lands every one
-# of the six at or under 120 KB, which is what keeps a move under 150 KB.
-# The frame itself stays 200 px: the pet art is 200 px and resampling it is
-# the one thing this build will not do.
+# MEASURED, 2026-11-25: 16 frames at scale 1 with a lossy alpha channel lands
+# every one of the six at or under 120 KB, which is what keeps a move under
+# 150 KB. The frame itself stays 200 px: the pet art is 200 px and resampling
+# it is the one thing this build will not do.
 RV_FRAMES = 16
 RV_FPS = 12.0
 RV_QUALITY = 32
 RV_ALPHA_Q = 20
 
-ROOM_DIR = "rooms/"
-PLATE_DIR = "plates/"
-REVEAL_DIR = "reveal/"
 
 
 def cdn_base(ref=None):
@@ -467,67 +453,32 @@ def make_pixels(pets, warn):
 # the sweep band                                                              #
 # --------------------------------------------------------------------------- #
 
-def make_sweep(warn):
-    """sweep.png: one vertical strip of glyph and block cells on the 7x13
-    terminal grid, dense down the middle and RAGGED CELL BY CELL at both
-    edges, so the reveal behind it reads as cells turning over and not as a
-    straight wipe line. It tiles vertically (ROWS * 13 px) and the page
-    rides it across with transform and nothing else."""
-    import random
-    try:
-        from PIL import Image, ImageDraw, ImageFont
-    except Exception as exc:
-        warn.append("no Pillow - no sweep band (%s)" % exc)
+def read_fx(warn):
+    """fx/manifest.json, as the heavy build wrote it. Only the morph and the
+    churn are taken: the lite wall has no grain layer."""
+    path = os.path.join(HERE, FX_DIR, "manifest.json")
+    if not os.path.isfile(path):
+        warn.append("no fx/manifest.json - the rooms change with a cut")
         return None
-    cw, ch, cols, rows = SW_CELL[0], SW_CELL[1], SW_COLS, SW_ROWS
-    W, H = cw * cols, ch * rows * SW_FRAMES
-    im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    font = None
-    src = os.path.join(HERE, "fonts", "ibm-plex-mono-latin-500-normal.woff2")
-    if os.path.isfile(src):
-        try:
-            import tempfile
-            from fontTools.ttLib import TTFont
-            f = TTFont(src)
-            f.flavor = None
-            t = tempfile.NamedTemporaryFile(suffix=".ttf", delete=False)
-            t.close()
-            f.save(t.name)
-            font = ImageFont.truetype(t.name, 13)
-        except Exception as exc:
-            warn.append("sweep band falls back to blocks (%s)" % exc)
-    rnd = random.Random(20261125)
-    glyphs = " .:-=+*#%&@"
-    cols_rgb = [tuple(int(TINT[i:i + 2], 16) for i in (1, 3, 5)),
-                tuple(int(TEXT[i:i + 2], 16) for i in (1, 3, 5))]
-    for cx in range(cols):
-        x = cx / float(cols - 1)
-        # DENSE ON THE FRONT LINE, SCATTERED SINGLE CELLS AT BOTH EDGES.
-        # The front line runs through the band's middle, so the profile is
-        # symmetric and the same sheet serves a move in either direction.
-        p = max(0.0, 1.0 - abs(2.0 * x - 1.0) ** 1.4) ** 1.1
-        for cy in range(rows * SW_FRAMES):
-            if rnd.random() > min(1.0, p * 1.08):
-                continue
-            al = int(255 * max(0.10, min(1.0, p * (1.0 - SW_JITTER)
-                                         * rnd.uniform(.55, 1.35))))
-            r, g, b = cols_rgb[0] if rnd.random() < .45 else cols_rgb[1]
-            px, py = cx * cw, cy * ch
-            if font is None or rnd.random() < .22:
-                d.rectangle([px + 1, py + 3, px + cw - 2, py + ch - 4],
-                            fill=(r, g, b, int(al * .8)))
-            else:
-                g_ = rnd.choice(glyphs[max(1, int(len(glyphs) * p * .55)):])
-                d.text((px, py + ch - 3), g_, font=font,
-                       fill=(r, g, b, al), anchor="ls")
-    out = os.path.join(HERE, SW_FILE)
-    # QUANTISED, ALPHA KEPT. Eight frames of RGBA at this size is a 150 KB
-    # PNG; FASTOCTREE to 64 colours keeps the alpha channel and a third of
-    # the weight.
-    im.quantize(colors=64, method=Image.FASTOCTREE).save(out, "PNG",
-                                                         optimize=True)
-    return os.path.getsize(out)
+    man = json.load(open(path, encoding="utf-8"))
+    fx = {k: man[k] for k in ("morph", "churn") if k in man}
+    if "morph" not in fx:
+        warn.append("fx/manifest.json has no morph")
+        return None
+    need = []
+    for b in fx["morph"]["bands"]:
+        need += [b["front"]["f"], b["front"]["b"], b["band"]["f"], b["band"]["b"]]
+    if fx.get("churn"):
+        need.append(fx["churn"]["file"])
+    total = 0
+    for f in need:
+        q = os.path.join(HERE, FX_DIR, f)
+        if not os.path.isfile(q):
+            warn.append("fx/%s is missing" % f)
+            return None
+        total += os.path.getsize(q)
+    fx["bytes"] = total
+    return fx
 
 
 # --------------------------------------------------------------------------- #
@@ -720,7 +671,15 @@ def bar_css(a, man):
             a("@media (max-width:620px){" + "".join(rules) + "}")
 
 
-def build_css(pets, man, rooms, order, sweep_bytes=0):
+def _mn(fx):
+    return int(((fx or {}).get("morph") or {}).get("frames") or 1)
+
+
+def _mdur(fx):
+    return float(((fx or {}).get("morph") or {}).get("dur_s") or 0.4)
+
+
+def build_css(pets, man, rooms, order, fx=None):
     L = []
     a = L.append
     n = len(pets)
@@ -737,15 +696,14 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
       "--mono:\"BZKMono\",ui-monospace,monospace;--black:\"BZKBlack\",serif;"
       "--focus:%dpx;--sz:%dpx;--fs:%.3f;--gap:%dpx;--step:%dpx;--near:%.3f;"
       "--cy:44%%;--nmz:1;"
-      "--swp:%s;--swbw:%dvw;--swtw:%dpx;--swsh:%dpx;--swchr:%s;"
+      "--mn:%d;--mdur:%gs;--msz:100%% calc(%d * 100%%);"
       "--slide:%s;--fade:%s;--boot:%s;--bbot:26px;--bpad:16px;--bs:.78;"
       "position:fixed;top:0;left:0;width:100vw;height:100vh;"
       "z-index:999999999;background:var(--ink);overflow:hidden;"
       "font-family:var(--mono);color:var(--text);"
       "-webkit-font-smoothing:antialiased}"
       % (INK, TEXT, DIM, LINE, TINT, ACCENT, FOCUS, ART, FSCALE, GAP, STEP,
-         NEAR, SW_RUN, SW_BAND, SW_CELL[0] * SW_COLS,
-         SW_CELL[1] * SW_ROWS * SW_FRAMES, SW_CHURN,
+         NEAR, _mn(fx), _mdur(fx), _mn(fx),
          SLIDE, FADE, BOOT))
     a("#my-overlay *{box-sizing:border-box;margin:0;padding:0;border:0}")
     # the LOADING gate the inline style put up, taken down from here
@@ -778,22 +736,8 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
     a(".bzk-rm{position:absolute;inset:0;opacity:0;visibility:hidden;"
       "z-index:1;background-position:center center;background-size:cover;"
       "background-repeat:no-repeat;background-color:var(--ink);"
-      "animation-name:none;animation-duration:var(--swp);"
-      "animation-timing-function:steps(%d,jump-none);"
-      "animation-fill-mode:both;"
-      "transition:opacity 0s linear var(--swp),"
-      "visibility 0s linear var(--swp)}" % SW_STEPS)
-    # THE REVEAL ITSELF. A four-point polygon with a slanted leading edge,
-    # the same four points at both ends so it interpolates. clip-path only -
-    # no mask, no blend mode, nothing on the wall that reads a pixel back.
-    # ONE SET OF KEYFRAMES PER ROOM, and the active room names its own.
-    # Without display:none there is no re-display to restart the clip on,
-    # so the restart is the animation-name changing - which happens when,
-    # and only when, the room does. Two pets in one room name the same
-    # animation and nothing is reconstructed.
-    for k in KINDS:
-        a("@keyframes bzk-swp-%s{from{clip-path:var(--swc0)}"
-          "to{clip-path:var(--swc1)}}" % k)
+      "transition:opacity 0s linear var(--mdur),"
+      "visibility 0s linear var(--mdur)}")
     # THE ID IS LOAD-BEARING. The inline gate in the paste is
     # `.bzk-wall>div>video{display:none}` at (0,1,2) and it beats a plain
     # `.bzk-rm > video` at (0,1,1) whatever the source order, so every
@@ -807,7 +751,8 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
     # does not.
     a("#my-overlay .bzk-rm > video{position:absolute;inset:0;display:none;"
       "width:100%;height:100%;object-fit:cover;object-position:center center;"
-      "transition:display 0s linear var(--swp);"
+      "image-rendering:auto;"
+      "transition:display 0s linear var(--mdur);"
       "transition-behavior:allow-discrete}")
     for k in order:
         e = rooms[k]
@@ -815,59 +760,98 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
             a(".bzk-rm.m-%s{background-image:url(%s)}" % (k, e["poster"]))
 
     # ======================================================================= #
-    # REPLACEABLE SECTION: THE SWEEP BETWEEN ROOMS                            #
-    # The direction lives in two variables and nothing else: a backward move #
-    # is #pNb, whose anchor carries .db, so only the `from` end of both      #
-    # keyframes changes. A variable inside @keyframes does NOT restart an    #
-    # animation, which is why turning round on the same room is silent.      #
+    # REPLACEABLE SECTION: THE MORPH BETWEEN ROOMS                            #
+    # Billy, 2026-11-26: "what happened to the original one, it was great".   #
+    # This IS the original: the heavy build's morph, mask sheets and all,     #
+    # moved onto a page that has one layer per room instead of one wall.      #
+    #                                                                         #
+    #   * THE SHEET IS STRETCHED ONE FRAME TO A WINDOWFUL. mask-size is       #
+    #     100% x (frames * 100%), so a mask-position percentage is measured   #
+    #     against -(frames - 1) windowfuls: 0% is the first frame, 100% the   #
+    #     last, and steps(frames,jump-none) lands on every one between.       #
+    #   * A MASK CELL IS THE WINDOW OVER THE SHEET'S COLUMNS, so the sheet    #
+    #     comes in four sizes and a media query picks the one whose cell      #
+    #     lands nearest 7 x 13.                                               #
+    #   * --mf AND --mrun ARE SET ONLY BY .da AND .db. With no hash, and      #
+    #     from the index strip's plain #pN, they are undefined: mask-image    #
+    #     falls back to none and the room is simply whole. That is what       #
+    #     keeps the morph off the first paint and off the screen at rest.     #
+    #   * --mk IS PER ROOM KIND, not per pet. An animation restarts when its  #
+    #     name changes, so every change of room replays the morph and two     #
+    #     pets in the same room replay nothing.                               #
     # ======================================================================= #
-    # THE FRONT LINE IS SLANTED, AND IT TRAVELS CORNER TO CORNER. The
-    # revealed side is a four-point polygon whose leading edge leans by
-    # --swt over the full height; a backward move is the mirror of it, and
-    # both ends of both directions have the same four points so the shape
-    # interpolates instead of jumping. The band is skewed to the SAME
-    # 18.78 degrees and rides the line, a band-width clear of the screen at
-    # each end so it never parks in view.
-    a(".bzk-stage{--swt:%dvh;--swk:-%sdeg;"
-      "--swc0:polygon(0%% 0%%,0%% 0%%,calc(0%% - var(--swt)) 100%%,0%% 100%%);"
-      "--swc1:polygon(0%% 0%%,calc(100%% + var(--swt)) 0%%,100%% 100%%,"
-      "0%% 100%%);"
-      "--swx0:calc(var(--swbw) * -1.1);"
-      "--swx1:calc(100vw + var(--swt) + var(--swbw) * .1)}"
-      % (SW_TILT, SW_SKEW))
-    a(".bzk-pa.db:target ~ .bzk-stage{--swk:%sdeg;"
-      "--swc0:polygon(100%% 0%%,100%% 0%%,100%% 100%%,"
-      "calc(100%% + var(--swt)) 100%%);"
-      "--swc1:polygon(calc(0%% - var(--swt)) 0%%,100%% 0%%,100%% 100%%,"
-      "0%% 100%%);"
-      "--swx0:calc(100vw + var(--swt) + var(--swbw) * .1);"
-      "--swx1:calc(var(--swbw) * -1.1)}" % SW_SKEW)
-    if sweep_bytes:
-        # transform-origin at the top-left corner, so the skew leans the
-        # band by exactly the --swt the polygon leans by.
-        a(".bzk-sw{position:absolute;top:0;left:0;width:var(--swbw);"
-          "height:100%;z-index:3;overflow:hidden;pointer-events:none;"
-          "transform-origin:0 0;"
-          "transform:translateX(var(--swx1)) skewX(var(--swk));"
-          "animation-name:var(--swn,none);animation-duration:var(--swp);"
-          "animation-timing-function:linear;animation-fill-mode:both}")
-        # THE CHURN. The sheet is EIGHT different frames stacked, and the
-        # inner layer steps down a whole frame at a time at the portfolio's
-        # rate, so every character under the band is replaced twelve times a
-        # second. One transform on one clipped layer, nothing else.
-        a('.bzk-sw::before{content:"";position:absolute;left:0;right:0;'
-          "top:0;height:calc(100%% + var(--swsh));"
-          "background-image:url(%s);background-repeat:repeat;"
-          "background-size:var(--swtw) var(--swsh);"
-          "animation:bzk-swq calc(var(--swchr) * %d) steps(%d,jump-none) 2 both}"
-          % (SW_FILE, SW_FRAMES, SW_FRAMES))
-        a("@keyframes bzk-swq{from{transform:translateY(0)}"
-          "to{transform:translateY(calc(var(--swsh) * -1))}}")
+    m = (fx or {}).get("morph")
+    if m:
+        nf = int(m["frames"])
         for k in KINDS:
-            a("@keyframes bzk-sw-%s{"
-              "from{transform:translateX(var(--swx0)) skewX(var(--swk))}"
-              "to{transform:translateX(var(--swx1)) skewX(var(--swk))}}" % k)
-    # ==================== end REPLACEABLE: THE SWEEP ======================= #
+            a("@keyframes bzk-m-%s{"
+              "from{-webkit-mask-position:0 0%%;mask-position:0 0%%}"
+              "to{-webkit-mask-position:0 100%%;mask-position:0 100%%}}" % k)
+            a("@keyframes bzk-c-%s{0%%,92%%{opacity:.34}100%%{opacity:0}}" % k)
+        for b in m["bands"]:
+            q = []
+            if b.get("min"):
+                q.append("(min-width:%dpx)" % b["min"])
+            if b.get("max"):
+                q.append("(max-width:%dpx)" % b["max"])
+            pre = ("@media " + " and ".join(q) + "{") if q else ""
+            post = "}" if q else ""
+            r = []
+            for d, tag in (("a", "f"), ("b", "b")):
+                r.append(".bzk-pa.d%s:target ~ .bzk-stage{--mrun:var(--mk);"
+                         "--crun:var(--ck);--grun:var(--gk);"
+                         "--mf:url(%s%s);--mb:url(%s%s)}"
+                         % (d, FX_DIR, b["front"][tag], FX_DIR, b["band"][tag]))
+            a(pre + "".join(r) + post)
+        # image-rendering is INHERITED and the mask is scaled by it, so the
+        # hard cell edge is bought here and given back on the video, which
+        # is the only thing under it that must stay smooth.
+        a(".bzk-pa.da:target ~ .bzk-stage .bzk-rm,"
+          ".bzk-pa.db:target ~ .bzk-stage .bzk-rm{image-rendering:pixelated}")
+        # ---- the crossing cells' own lettering ---------------------------
+        # The band sheet masks a layer of churning characters that rides the
+        # front. Two masks on two elements, not one composite, because they
+        # step at different rates: the band at the morph's 24 frames over
+        # 1.4 s, the lettering on the renderer's own .085 s tick, jumped by
+        # WHOLE CELLS so every cell is handed a different character and
+        # nothing slides.
+        c = (fx or {}).get("churn")
+        if c:
+            a(".bzk-cb{position:absolute;inset:0;z-index:3;"
+              "pointer-events:none;opacity:0;image-rendering:pixelated;"
+              "overflow:hidden;"
+              "-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;"
+              "-webkit-mask-size:var(--msz);mask-size:var(--msz);"
+              "-webkit-mask-image:var(--mb);mask-image:var(--mb);"
+              "-webkit-mask-position:0 0;mask-position:0 0}")
+            a(".bzk-pa.da:target ~ .bzk-stage .bzk-cb,"
+              ".bzk-pa.db:target ~ .bzk-stage .bzk-cb"
+              "{opacity:.34;animation:var(--mrun,none) var(--mdur) "
+              "steps(%d,jump-none) both,var(--crun,none) var(--mdur) "
+              "linear both}" % nf)
+            cw2, ch2 = c["px"]
+            turn = float(c["ticks"]) * float(c["tick_s"])
+            a(".bzk-cg{position:absolute;inset:-%dpx;display:block;"
+              "background:var(--tint);image-rendering:auto;"
+              "-webkit-mask-image:url(%s%s);mask-image:url(%s%s);"
+              "-webkit-mask-size:%dpx %dpx;mask-size:%dpx %dpx;"
+              "-webkit-mask-repeat:repeat;mask-repeat:repeat;"
+              "will-change:transform;animation-name:var(--grun,none);"
+              "animation-duration:%gs;animation-timing-function:steps(1,end);"
+              "animation-iteration-count:%d;animation-fill-mode:both}"
+              % (max(cw2, ch2), FX_DIR, c["file"], FX_DIR, c["file"],
+                 cw2, ch2, cw2, ch2, turn, CHURN_ITER))
+            # ONE COPY OF THE JUMPS PER ROOM, so the churn restarts with the
+            # morph and then STOPS. An infinite transform animation on a
+            # layer nobody can see is exactly the kind of cost this build
+            # exists to avoid.
+            j = c["jumps"]
+            frames = "".join("%.4g%%{transform:translate3d(%dpx,%dpx,0)}"
+                             % (100.0 * i / len(j), -o[0], -o[1])
+                             for i, o in enumerate(j))
+            for k in KINDS:
+                a("@keyframes bzk-g-%s{%s}" % (k, frames))
+    # ==================== end REPLACEABLE: THE MORPH ======================= #
 
     # THE OPACITY FADE IS NOW REDUCED-MOTION ONLY. Under the sweep the
     # incoming room must be at full opacity the instant it is displayed -
@@ -875,9 +859,23 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
     # the whole 0.9 s, which is the delay on the transition above. A
     # @starting-style here would fade the incoming in through the band, so
     # the whole set of them is emitted inside the reduced-motion query.
+    nfr = _mn(fx)
+
     def roomrule(sel, kind):
+        # THE INCOMING ROOM WEARS THE FRONT SHEET. --mf and --mrun come from
+        # the .da/.db rules only, so with no hash and from a plain #pN both
+        # are undefined: mask-image falls back to none, animation-name to
+        # none, and the room is simply whole. --mk is per room kind, so the
+        # animation-name changes on a change of room and on nothing else.
         a("%s .bzk-rm.m-%s{opacity:1;visibility:visible;z-index:2;"
-          "transition:none;animation-name:var(--swpn,none)}" % (sel, kind))
+          "transition:none;"
+          "-webkit-mask-image:var(--mf);mask-image:var(--mf);"
+          "-webkit-mask-size:var(--msz);mask-size:var(--msz);"
+          "-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;"
+          "-webkit-mask-position:0 0;mask-position:0 0;"
+          "animation-name:var(--mrun,none);animation-duration:var(--mdur);"
+          "animation-timing-function:steps(%d,jump-none);"
+          "animation-fill-mode:both}" % (sel, kind, nfr))
         # #my-overlay, because the base video rule carries that id and no
         # number of classes outranks it.
         a("#my-overlay %s .bzk-rm.m-%s > video{display:block;transition:none}"
@@ -1113,8 +1111,9 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
         # --swn IS THE ROOM, NOT THE PET. Two pets in the same room name
         # the same animation, the band is never reconstructed, and the
         # move passes with no sweep at all.
-        a("%s{--trot:%s;--tsat:%s;--swn:bzk-sw-%s;--swpn:bzk-swp-%s}"
-          % (sel, trot, tsat, pets[f - 1]["kind"], pets[f - 1]["kind"]))
+        kk = pets[f - 1]["kind"]
+        a("%s{--trot:%s;--tsat:%s;--mk:bzk-m-%s;--ck:bzk-c-%s;--gk:bzk-g-%s}"
+          % (sel, trot, tsat, kk, kk, kk))
         # the prefetch list for this state: both neighbours' sheets, bar
         # plates and room poster
         pv, nx = ((f - 2) % n) + 1, (f % n) + 1
@@ -1182,12 +1181,13 @@ def build_css(pets, man, rooms, order, sweep_bytes=0):
       "#bzk-boot{opacity:0;visibility:hidden}"
       ".bzk-pet > img{opacity:1 !important}"
       ".bzk-win{display:none !important}"
-      ".bzk-sw{display:none !important}"
+      ".bzk-cb{display:none !important}"
       "#my-overlay .bzk-rm > video{display:none !important}"
       # the sweep becomes the crossfade this build shipped with
       # the sweep becomes a plain crossfade: every room visible, only
       # the current one opaque, nothing discrete anywhere
-      "#my-overlay .bzk-rm{clip-path:none !important;"
+      "#my-overlay .bzk-rm{-webkit-mask-image:none !important;"
+      "mask-image:none !important;image-rendering:auto !important;"
       "visibility:visible !important;"
       "transition:opacity .4s linear !important}}")
     return "\n".join(L) + "\n"
@@ -1286,7 +1286,7 @@ def body(pets, man, rooms, order, local=False):
     for k in order:
         o.append('<div class="bzk-rm m-%s"><video src="%s%s" autoplay loop '
                  'muted playsinline></video></div>' % (k, base, rooms[k]["mp4"]))
-    o.append('<u class="bzk-sw"></u>')
+    o.append('<u class="bzk-cb"><i class="bzk-cg"></i></u>')
     o.append("</div>")
     o.append('<div class="bzk-row">')
     for i, p in enumerate(pets, 1):
@@ -1400,7 +1400,7 @@ def main(argv=None):
     attach_reveal(pets, warn)
     make_pixels(pets, warn)
     attach_names(pets, warn)
-    sweep_bytes = make_sweep(warn) or 0
+    fx = read_fx(warn)
     man = read_plates(warn)
     attach_plates(pets, man, warn)
     rooms = read_rooms(warn)
@@ -1410,7 +1410,7 @@ def main(argv=None):
     for w in warn:
         print("WARNING:", w)
 
-    css = build_css(pets, man, rooms, order, sweep_bytes)
+    css = build_css(pets, man, rooms, order, fx)
     paste = '<link rel="stylesheet" href="%sprofile%s.css">\n%s\n' \
             % (cdn_base(), tag, body(pets, man, rooms, order, local=False))
     check_paste(paste)
@@ -1450,9 +1450,10 @@ def main(argv=None):
     print("loops        : %.2f MB  posters %.0f KB  bar plates %.0f KB  "
           "sheets %.0f KB" % (vid / 1e6, pos / 1024.0, bar / 1024.0,
                               sum(s for s, _ in sheets.values()) / 1024.0))
-    print("sweep band   : %s  %.1f KB  (%d x %d, %dx%d cells)"
-          % (SW_FILE, sweep_bytes / 1024.0, SW_CELL[0] * SW_COLS,
-             SW_CELL[1] * SW_ROWS, SW_COLS, SW_ROWS))
+    if fx:
+        print("morph fx     : %.0f KB in %s over %d sizes, %d frames, %gs"
+              % (fx["bytes"] / 1024.0, FX_DIR, len(fx["morph"]["bands"]),
+                 fx["morph"]["frames"], fx["morph"]["dur_s"]))
     print("cdn ref      : %s" % REF)
     chars = len(paste)
     each = (len(body(pets, man, rooms, order)) -
